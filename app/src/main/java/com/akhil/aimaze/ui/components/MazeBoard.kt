@@ -15,6 +15,7 @@ import com.akhil.aimaze.domain.maze.Position
 fun MazeBoard(
     maze: Maze,
     player: Position? = null,
+    opponent: Position? = null,
     path: List<Position> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
@@ -22,6 +23,7 @@ fun MazeBoard(
     val startColor = MaterialTheme.colorScheme.tertiary
     val goalColor = MaterialTheme.colorScheme.secondary
     val playerColor = MaterialTheme.colorScheme.primary
+    val opponentColor = MaterialTheme.colorScheme.secondary
     val pathColor = MaterialTheme.colorScheme.primary
     val background = MaterialTheme.colorScheme.surfaceVariant
 
@@ -81,10 +83,18 @@ fun MazeBoard(
             }
         }
 
+        opponent?.let {
+            drawCircle(
+                color = opponentColor,
+                radius = markerRadius * 0.56f,
+                center = center(it),
+            )
+        }
+
         player?.let {
             drawCircle(
                 color = playerColor,
-                radius = markerRadius * 0.7f,
+                radius = markerRadius * 0.72f,
                 center = center(it),
             )
         }
