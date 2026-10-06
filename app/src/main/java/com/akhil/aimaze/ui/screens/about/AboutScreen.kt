@@ -6,13 +6,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -20,60 +24,94 @@ fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
     ) {
-        OutlinedButton(onClick = onBack) { Text("Back") }
-        Text("How It Works", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "AI Maze is an offline educational app. Every maze, training episode, benchmark, and saved result is computed locally on the Android device.",
-            style = MaterialTheme.typography.bodyLarge,
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) {
+                Text("‹")
+            }
 
-        Explanation(
-            "Maze generation",
-            "Randomized depth-first search (recursive backtracker) starts with every wall closed, walks to unvisited neighbors, carves reciprocal passages, and backtracks when stuck. The result is a perfect maze: connected and acyclic, with exactly one route between any two cells. A seed makes generation reproducible.",
-        )
-        Explanation(
-            "Q-Learning",
-            "The reinforcement-learning agent treats each cell as a state and the four cardinal directions as actions. Q-values are updated from rewards using a learning rate and discount factor. Reaching the goal earns a large positive reward; steps and invalid moves carry penalties.",
-        )
-        Explanation(
-            "Exploration vs exploitation",
-            "An epsilon-greedy policy sometimes explores a random action and otherwise chooses the best-known action. Epsilon decays during training so early episodes explore broadly while later episodes increasingly exploit learned values.",
-        )
-        Explanation(
-            "A*",
-            "A* is deterministic graph search. It combines the path cost already travelled with a Manhattan-distance heuristic toward the goal. On this unit-cost grid, the heuristic is admissible and A* returns an optimal path.",
-        )
-        Explanation(
-            "Dijkstra",
-            "Dijkstra also finds an optimal route but does not use a goal-directed heuristic. It expands positions in increasing path-cost order, so it may explore more of the maze than A*.",
-        )
-        Explanation(
-            "Random baseline",
-            "The Random agent simply selects among currently valid neighboring cells. It is intentionally weak and stochastic. Its success rate and step counts provide context, not a claim that it is equivalent to a shortest-path solver.",
-        )
-        Explanation(
-            "Fair benchmarking",
-            "A* and Dijkstra are compared using path length, nodes explored, and one-shot search time. Q-Learning is reported with training episodes, training success rate, exploration rate, and learned path quality. Random is reported across repeated trials. Training time is not presented as the same metric as deterministic search time.",
-        )
+            Text(
+                "Game Guide",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+            )
+            Text(
+                "Everything runs offline. No account, no servers, no ads.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            GuideCard(
+                title = "MAZE RUN",
+                body = "Swipe directly on the maze. Each swipe attempts one move. Walls block movement. Reach the goal in as few moves as you can.",
+            )
+            GuideCard(
+                title = "TRAINING LAB",
+                body = "The learning solver improves through repeated attempts. It gets rewarded for reaching the exit and penalized for wasted or invalid moves.",
+            )
+            GuideCard(
+                title = "RACE MODE",
+                body = "A*, Dijkstra, the trained solver, and a Random baseline all face the same maze. Their score types stay separate so the comparison remains fair.",
+            )
+            GuideCard(
+                title = "MAZE GENERATION",
+                body = "Each level is generated with randomized depth-first search. The level number is a reproducible seed, so the same level always recreates the same maze.",
+            )
+            GuideCard(
+                title = "A*",
+                body = "A* uses the distance already travelled plus a goal-directed estimate. On this grid it still returns an optimal route.",
+            )
+            GuideCard(
+                title = "DIJKSTRA",
+                body = "Dijkstra searches outward by shortest known distance. It also finds the optimal route, usually after exploring more cells.",
+            )
+            GuideCard(
+                title = "Q-LEARNING",
+                body = "Each cell is a state and each direction is an action. The solver updates Q-values after every move, gradually learning which decisions lead to the exit.",
+            )
+            GuideCard(
+                title = "RANDOM",
+                body = "The Random runner picks among valid neighboring cells. It is a deliberately weak baseline used for context, not a serious shortest-path solver.",
+            )
+        }
     }
 }
 
 @Composable
-private fun Explanation(title: String, body: String) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun GuideCard(
+    title: String,
+    body: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(body, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Black,
+            )
+            Text(
+                body,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }
