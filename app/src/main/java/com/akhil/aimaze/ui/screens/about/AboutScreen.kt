@@ -55,11 +55,11 @@ fun AboutScreen(
                 body = "Swipe directly on the maze. Each swipe attempts one move. Walls block movement. Reach the goal in as few moves as you can.",
             )
             GuideCard(
-                title = "TRAINING LAB",
+                title = "SOLVER LAB",
                 body = "The learning solver improves through repeated attempts. It gets rewarded for reaching the exit and penalized for wasted or invalid moves.",
             )
             GuideCard(
-                title = "RACE MODE",
+                title = "BEAT THE BOT",
                 body = "A*, Dijkstra, the trained solver, and a Random baseline all face the same maze. Their score types stay separate so the comparison remains fair.",
             )
             GuideCard(
