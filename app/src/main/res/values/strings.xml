@@ -11,6 +11,8 @@
     <string name="comparison_description">Race a fast maze-solving bot on the same level.</string>
     <string name="history_title">Records</string>
     <string name="history_description">See your race history, wins, losses, and best runs.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_description">Sound, vibration, and game preferences.</string>
     <string name="about_title">How to Play</string>
     <string name="about_description">Learn the controls, scoring, and game modes.</string>
     <string name="back">Back</string>
