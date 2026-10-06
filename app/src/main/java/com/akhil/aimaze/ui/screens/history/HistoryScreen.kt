@@ -189,7 +189,11 @@ private fun SoloRecordCard(item: SoloRunRecordEntity) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    if (item.mode == "TIME_ATTACK") "TIME ATTACK" else "MAZE RUN",
+                    when (item.mode) {
+                        "TIME_ATTACK" -> "TIME ATTACK"
+                        "DAILY" -> "DAILY CHALLENGE"
+                        else -> "MAZE RUN"
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
                 )
