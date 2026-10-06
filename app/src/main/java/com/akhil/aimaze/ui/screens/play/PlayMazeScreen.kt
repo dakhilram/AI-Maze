@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -34,6 +35,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.Maze
@@ -48,6 +51,7 @@ fun PlayMazeScreen(
 ) {
     var size by remember { mutableIntStateOf(8) }
     var seed by remember { mutableLongStateOf(42L) }
+    var seedText by remember { mutableStateOf("42") }
     var playState by remember(size, seed) {
         mutableStateOf(
             MazePlayState.initial(
@@ -93,6 +97,28 @@ fun PlayMazeScreen(
                 }
             }
 
+            OutlinedTextField(
+                value = seedText,
+                onValueChange = { value ->
+                    seedText = value.filter { it == '-' || it.isDigit() }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Maze seed") },
+                supportingText = { Text("Use the same size and seed to reproduce this maze.") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                trailingIcon = {
+                    Button(
+                        onClick = {
+                            seedText.toLongOrNull()?.let { seed = it }
+                        },
+                        enabled = seedText.toLongOrNull() != null,
+                    ) {
+                        Text("Generate")
+                    }
+                },
+            )
+
             Text(
                 text = "Seed: $seed  •  Moves: ${playState.moveCount}",
                 style = MaterialTheme.typography.labelLarge,
@@ -125,11 +151,20 @@ fun PlayMazeScreen(
                 OutlinedButton(onClick = { playState = playState.reset() }) {
                     Text("Restart")
                 }
-                Button(onClick = { seed += 1L }) {
+                Button(
+                    onClick = {
+                        seed += 1L
+                        seedText = seed.toString()
+                    },
+                ) {
                     Text("New maze")
                 }
             }
 
+            Text(
+                text = "Start = tertiary marker • Goal = secondary marker • Player = primary marker",
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text(
                 text = "Tip: the seed makes a maze reproducible. The same size and seed always produce the same topology.",
                 style = MaterialTheme.typography.bodySmall,
