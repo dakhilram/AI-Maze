@@ -19,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,6 +45,9 @@ import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GameBackButton
+import com.akhil.aimaze.ui.game.GameStatTile
+import com.akhil.aimaze.ui.game.WinBurst
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -119,24 +122,22 @@ fun DailyChallengeScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
+                GameBackButton(
                     onClick = {
                         feedback.button()
                         onBack()
                     },
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Text("‹")
-                }
+                )
                 Column {
                     Text(
                         "Daily Challenge",
+                        color = Color.White,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                     )
                     Text(
                         "$dateLabel • same maze for the whole day",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = Color.White.copy(alpha = 0.62f),
                     )
                 }
             }
@@ -145,9 +146,9 @@ fun DailyChallengeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                DailyStat("TIME", formatDailyTime(elapsedMs), Modifier.weight(1f))
-                DailyStat("MOVES", playState.moveCount.toString(), Modifier.weight(1f))
-                DailyStat("PAR", par.toString(), Modifier.weight(1f))
+                GameStatTile("TIME", formatDailyTime(elapsedMs), Modifier.weight(1f))
+                GameStatTile("MOVES", playState.moveCount.toString(), Modifier.weight(1f))
+                GameStatTile("TARGET", par.toString(), Modifier.weight(1f))
             }
 
             Card(
@@ -211,6 +212,7 @@ fun DailyChallengeScreen(
                         )
                         Text(
                             "${playState.moveCount} moves • ${formatDailyTime(elapsedMs)}",
+                            color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
@@ -220,8 +222,8 @@ fun DailyChallengeScreen(
 
             if (!playState.completed) {
                 Text(
-                    "Everyone gets today's same seeded maze. Your score is moves + speed.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "Everyone gets today's same maze. Match the target route and finish fast.",
+                    color = Color.White.copy(alpha = 0.66f),
                 )
             }
 
@@ -242,29 +244,11 @@ fun DailyChallengeScreen(
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun DailyStat(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(modifier = modifier, shape = RoundedCornerShape(16.dp)) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
-            )
-            Text(
-                label,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        WinBurst(
+            active = playState.completed,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
