@@ -11,13 +11,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
     entities = [
         BenchmarkHistoryEntity::class,
         RaceRecordEntity::class,
+        SoloRunRecordEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AiMazeDatabase : RoomDatabase() {
     abstract fun benchmarkHistoryDao(): BenchmarkHistoryDao
     abstract fun raceRecordDao(): RaceRecordDao
+    abstract fun soloRunRecordDao(): SoloRunRecordDao
 
     companion object {
         @Volatile private var instance: AiMazeDatabase? = null
@@ -41,13 +43,33 @@ abstract class AiMazeDatabase : RoomDatabase() {
             }
         }
 
+        private val migration2To3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS solo_run_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        mode TEXT NOT NULL,
+                        rows INTEGER NOT NULL,
+                        columns INTEGER NOT NULL,
+                        mazeSeed INTEGER NOT NULL,
+                        moves INTEGER NOT NULL,
+                        elapsedMs INTEGER NOT NULL,
+                        stars INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
+                )
+            }
+        }
+
         fun get(context: Context): AiMazeDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext,
                 AiMazeDatabase::class.java,
                 "ai-maze.db",
             )
-                .addMigrations(migration1To2)
+                .addMigrations(migration1To2, migration2To3)
                 .build()
                 .also { instance = it }
         }
