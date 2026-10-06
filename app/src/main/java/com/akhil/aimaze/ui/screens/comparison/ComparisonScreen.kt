@@ -190,13 +190,9 @@ fun ComparisonScreen(
                         },
                     )
 
-                    AnimatedVisibility(
-                        visible = countdown > 0,
-                        enter = fadeIn() + scaleIn(),
-                        modifier = Modifier.matchParentSize(),
-                    ) {
+                    if (countdown > 0) {
                         Box(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.matchParentSize(),
                             contentAlignment = androidx.compose.ui.Alignment.Center,
                         ) {
                             Text(
