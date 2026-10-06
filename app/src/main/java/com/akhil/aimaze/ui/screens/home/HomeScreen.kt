@@ -43,6 +43,7 @@ fun HomeScreen(
 ) {
     val feedback = rememberGameFeedback()
     val play = destinations.firstOrNull { it == AppDestination.Play }
+    val daily = destinations.firstOrNull { it == AppDestination.Daily }
     val timeAttack = destinations.firstOrNull { it == AppDestination.TimeAttack }
     val beatBot = destinations.firstOrNull { it == AppDestination.Comparison }
     val records = destinations.firstOrNull { it == AppDestination.History }
@@ -92,6 +93,20 @@ fun HomeScreen(
                                 Color(0xFFB84E00),
                             ),
                         ),
+                        onClick = {
+                            feedback.button()
+                            onDestinationSelected(destination)
+                        },
+                    )
+                }
+            }
+
+            daily?.let { destination ->
+                item {
+                    UtilityCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "DAILY CHALLENGE",
+                        subtitle = "One maze for everyone today • moves + speed",
                         onClick = {
                             feedback.button()
                             onDestinationSelected(destination)
