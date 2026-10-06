@@ -2,10 +2,14 @@ package com.akhil.aimaze.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val MazeTealLight = Color(0xFF4FD8D6)
+val MazeTealDark = Color(0xFF006A6A)
+val MazeSlateLight = Color(0xFFB0CCCC)
+val MazeSlateDark = Color(0xFF4A6363)
+val MazeIndigoLight = Color(0xFFC1C3FF)
+val MazeIndigoDark = Color(0xFF5358C8)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val MazeBackgroundLight = Color(0xFFF7FAFA)
+val MazeSurfaceLight = Color(0xFFF7FAFA)
+val MazeBackgroundDark = Color(0xFF0E1414)
+val MazeSurfaceDark = Color(0xFF0E1414)
