@@ -5,10 +5,10 @@
     <string name="home_description">Swipe through handcrafted-feeling generated mazes, train a solver, race algorithms, and chase cleaner runs.</string>
     <string name="play_title">Maze Run</string>
     <string name="play_description">Jump straight into a maze and swipe your way to the exit.</string>
-    <string name="training_title">Training Lab</string>
-    <string name="training_description">Train the learning agent and watch its best route improve.</string>
-    <string name="comparison_title">Race Mode</string>
-    <string name="comparison_description">Put different solvers on the same maze and compare the run.</string>
+    <string name="training_title">Solver Lab</string>
+    <string name="training_description">See how the solver learns after you have played the maze yourself.</string>
+    <string name="comparison_title">Beat the Bot</string>
+    <string name="comparison_description">Race an optimal maze-solving bot on the exact same level.</string>
     <string name="history_title">Records</string>
     <string name="history_description">Review saved benchmark runs and past results.</string>
     <string name="about_title">Game Guide</string>
