@@ -5,6 +5,8 @@
     <string name="home_description">Swipe through endless mazes, race the clock, and take on the bot.</string>
     <string name="play_title">Maze Run</string>
     <string name="play_description">Classic endless maze runs with move and time scoring.</string>
+    <string name="daily_title">Daily Challenge</string>
+    <string name="daily_description">One seeded challenge maze every day.</string>
     <string name="time_attack_title">Time Attack</string>
     <string name="time_attack_description">Escape before the countdown hits zero.</string>
     <string name="comparison_title">Beat the Bot</string>
