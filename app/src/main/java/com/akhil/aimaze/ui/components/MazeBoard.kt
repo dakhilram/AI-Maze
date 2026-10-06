@@ -28,8 +28,8 @@ fun MazeBoard(
     modifier: Modifier = Modifier,
 ) {
     val wallColor = MaterialTheme.colorScheme.onSurface
-    val startColor = MaterialTheme.colorScheme.tertiary
-    val goalColor = MaterialTheme.colorScheme.secondary
+    val startColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val goalColor = MaterialTheme.colorScheme.tertiary
     val playerColor = MaterialTheme.colorScheme.primary
     val opponentColor = MaterialTheme.colorScheme.secondary
     val pathColor = MaterialTheme.colorScheme.primary
@@ -100,9 +100,11 @@ fun MazeBoard(
         }
 
         val markerRadius = minOf(cellWidth, cellHeight) * 0.23f
-        drawCircle(startColor.copy(alpha = 0.75f), markerRadius * 0.75f, center(maze.start))
-        drawCircle(goalColor.copy(alpha = 0.18f), markerRadius * 1.7f * goalPulse, center(maze.goal))
-        drawCircle(goalColor, markerRadius * goalPulse, center(maze.goal))
+        drawCircle(startColor.copy(alpha = 0.35f), markerRadius * 0.90f, center(maze.start))
+        drawCircle(startColor.copy(alpha = 0.85f), markerRadius * 0.48f, center(maze.start))
+        drawCircle(goalColor.copy(alpha = 0.16f), markerRadius * 1.95f * goalPulse, center(maze.goal))
+        drawCircle(goalColor.copy(alpha = 0.34f), markerRadius * 1.45f * goalPulse, center(maze.goal))
+        drawCircle(goalColor, markerRadius * 0.82f * goalPulse, center(maze.goal))
 
         for (row in 0 until maze.rows) {
             for (column in 0 until maze.columns) {
