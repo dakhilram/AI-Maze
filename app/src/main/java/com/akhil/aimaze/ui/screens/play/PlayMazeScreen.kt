@@ -2,8 +2,8 @@
 
 package com.akhil.aimaze.ui.screens.play
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,17 +31,16 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +79,7 @@ fun PlayMazeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = "Solve a seeded maze yourself. Every move follows the same wall rules the AI will use later.",
+                text = "Solve the maze by swiping directly on the board. Every swipe attempts one move in that direction.",
                 style = MaterialTheme.typography.bodyLarge,
             )
 
@@ -124,12 +123,13 @@ fun PlayMazeScreen(
                 style = MaterialTheme.typography.labelLarge,
             )
 
-            MazeBoard(
-                maze = playState.maze,
-                player = playState.player,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
+            SwipeableMazeBoard(
+                playState = playState,
+                onMove = { direction ->
+                    if (!playState.completed) {
+                        playState = playState.move(direction)
+                    }
+                },
             )
 
             if (playState.completed) {
@@ -138,12 +138,13 @@ fun PlayMazeScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
+            } else {
+                Text(
+                    text = "Swipe up, down, left, or right on the maze to move.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-
-            DirectionControls(
-                enabled = !playState.completed,
-                onMove = { direction -> playState = playState.move(direction) },
-            )
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -175,40 +176,46 @@ fun PlayMazeScreen(
 }
 
 @Composable
-private fun DirectionControls(
-    enabled: Boolean,
+private fun SwipeableMazeBoard(
+    playState: MazePlayState,
     onMove: (Direction) -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        MoveButton("↑", "Move north", enabled) { onMove(Direction.NORTH) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MoveButton("←", "Move west", enabled) { onMove(Direction.WEST) }
-            Box(Modifier.size(64.dp))
-            MoveButton("→", "Move east", enabled) { onMove(Direction.EAST) }
-        }
-        MoveButton("↓", "Move south", enabled) { onMove(Direction.SOUTH) }
-    }
-}
+    var dragOffset by remember(playState.maze) { mutableStateOf(Offset.Zero) }
+    val swipeThreshold = 36f
 
-@Composable
-private fun MoveButton(
-    label: String,
-    description: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
+    MazeBoard(
+        maze = playState.maze,
+        player = playState.player,
         modifier = Modifier
-            .size(64.dp)
-            .semantics { contentDescription = description },
-    ) {
-        Text(label, style = MaterialTheme.typography.headlineSmall)
-    }
-}
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .pointerInput(playState.maze, playState.completed) {
+                detectDragGestures(
+                    onDragStart = {
+                        dragOffset = Offset.Zero
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        dragOffset += dragAmount
+                    },
+                    onDragEnd = {
+                        val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
+                        val direction = when {
+                            dragOffset.getDistance() < swipeThreshold -> null
+                            horizontal && dragOffset.x > 0f -> Direction.EAST
+                            horizontal && dragOffset.x < 0f -> Direction.WEST
+                            !horizontal && dragOffset.y > 0f -> Direction.SOUTH
+                            !horizontal && dragOffset.y < 0f -> Direction.NORTH
+                            else -> null
+                        }
 
+                        direction?.let(onMove)
+                        dragOffset = Offset.Zero
+                    },
+                    onDragCancel = {
+                        dragOffset = Offset.Zero
+                    },
+                )
+            },
+    )
+}
