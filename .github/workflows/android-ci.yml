@@ -21,11 +21,10 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android 37 platform
-        run: sdkmanager "platforms;android-37"
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-37"
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
