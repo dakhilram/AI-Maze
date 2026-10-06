@@ -56,7 +56,7 @@ fun AboutScreen(
 
             GuideCard(
                 title = "MAZE RUN",
-                body = "Classic endless play. Your timer starts on the first successful move. Finish near par to earn more stars, then jump straight into the next level.",
+                body = "A 500-level campaign. Your timer starts on the first successful move. Match the TARGET move count for 3 stars and unlock the next level.",
             )
             GuideCard(
                 title = "DAILY CHALLENGE",
@@ -72,11 +72,11 @@ fun AboutScreen(
             )
             GuideCard(
                 title = "DIFFICULTY",
-                body = "Easy, Normal, Hard, and Expert increase the maze size from 8×8 up to 20×20.",
+                body = "Campaign difficulty rises automatically: levels 1–125 use 8×8 mazes, 126–250 use 12×12, 251–375 use 16×16, and 376–500 use 20×20. Challenge modes let you pick difficulty directly.",
             )
             GuideCard(
                 title = "SCORING",
-                body = "Maze Run scores your move count against par. Three stars means you matched the cleanest route. Time and race modes reward speed.",
+                body = "TARGET is the shortest valid route for that campaign maze. Match it for 3 stars, stay close for 2, and every clear earns at least 1 star. Time and race modes reward speed.",
             )
             GuideCard(
                 title = "FEEDBACK",
