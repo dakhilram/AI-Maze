@@ -145,13 +145,8 @@ fun TimeAttackScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         },
                     )
 
-                    AnimatedVisibility(
-                        visible = countdown > 0,
-                        enter = fadeIn() + scaleIn(),
-                        exit = fadeOut() + scaleOut(),
-                        modifier = Modifier.matchParentSize(),
-                    ) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (countdown > 0) {
+                        Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 countdown.toString(),
                                 style = MaterialTheme.typography.displayLarge,
