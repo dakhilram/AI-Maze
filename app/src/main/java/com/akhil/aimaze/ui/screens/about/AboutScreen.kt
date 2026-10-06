@@ -40,47 +40,43 @@ fun AboutScreen(
             }
 
             Text(
-                "Game Guide",
+                "How to Play",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
             )
             Text(
-                "Everything runs offline. No account, no servers, no ads.",
+                "Swipe directly on the maze. Reach the glowing exit and keep your route clean.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             GuideCard(
                 title = "MAZE RUN",
-                body = "Swipe directly on the maze. Each swipe attempts one move. Walls block movement. Reach the goal in as few moves as you can.",
+                body = "Classic endless play. Your timer starts on the first successful move. Finish near par to earn more stars, then jump straight into the next level.",
             )
             GuideCard(
-                title = "SOLVER LAB",
-                body = "The learning solver improves through repeated attempts. It gets rewarded for reaching the exit and penalized for wasted or invalid moves.",
+                title = "TIME ATTACK",
+                body = "You get a fixed clock based on difficulty. A 3-2-1 countdown starts the round. Escape before time expires.",
             )
             GuideCard(
                 title = "BEAT THE BOT",
-                body = "A*, Dijkstra, the trained solver, and a Random baseline all face the same maze. Their score types stay separate so the comparison remains fair.",
+                body = "You and the blue bot race the exact same maze. Swipe fast, avoid wasted moves, and reach the exit first.",
             )
             GuideCard(
-                title = "MAZE GENERATION",
-                body = "Each level is generated with randomized depth-first search. The level number is a reproducible seed, so the same level always recreates the same maze.",
+                title = "DIFFICULTY",
+                body = "Easy, Normal, Hard, and Expert increase the maze size from 8×8 up to 20×20.",
             )
             GuideCard(
-                title = "A*",
-                body = "A* uses the distance already travelled plus a goal-directed estimate. On this grid it still returns an optimal route.",
+                title = "SCORING",
+                body = "Maze Run scores your move count against par. Three stars means you matched the cleanest route. Time and race modes reward speed.",
             )
             GuideCard(
-                title = "DIJKSTRA",
-                body = "Dijkstra searches outward by shortest known distance. It also finds the optimal route, usually after exploring more cells.",
+                title = "FEEDBACK",
+                body = "Successful moves animate smoothly. Hitting a wall gives a shake, sound, and haptic response. Wins and losses have their own feedback.",
             )
             GuideCard(
-                title = "Q-LEARNING",
-                body = "Each cell is a state and each direction is an action. The solver updates Q-values after every move, gradually learning which decisions lead to the exit.",
-            )
-            GuideCard(
-                title = "RANDOM",
-                body = "The Random runner picks among valid neighboring cells. It is a deliberately weak baseline used for context, not a serious shortest-path solver.",
+                title = "OFFLINE",
+                body = "Maze Rush runs fully on-device. No account, no ads, no internet connection, and no online leaderboard are required.",
             )
         }
     }
@@ -108,10 +104,7 @@ private fun GuideCard(
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Black,
             )
-            Text(
-                body,
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Text(body, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
