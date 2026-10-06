@@ -21,12 +21,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.data.history.AiMazeDatabase
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GameBackButton
 import com.akhil.aimaze.data.history.RaceRecordEntity
 import com.akhil.aimaze.data.history.RaceRecordRepository
 import com.akhil.aimaze.data.history.SoloRunRecordEntity
@@ -65,9 +67,7 @@ fun HistoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) {
-                    Text("‹")
-                }
+                GameBackButton(onClick = onBack)
                 if (!isEmpty) {
                     OutlinedButton(
                         onClick = {
@@ -85,12 +85,13 @@ fun HistoryScreen(
 
             Text(
                 "Records",
+                color = Color.White,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
             )
             Text(
                 "Your runs are stored only on this device.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.62f),
             )
 
             if (isEmpty) {
@@ -153,7 +154,7 @@ private fun SectionTitle(text: String) {
     Text(
         text,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Color.White.copy(alpha = 0.62f),
         fontWeight = FontWeight.Black,
     )
 }
@@ -169,7 +170,7 @@ private fun SummaryCard(
             Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
             Text(
                 label,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.62f),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -205,7 +206,7 @@ private fun SoloRecordCard(item: SoloRunRecordEntity) {
             }
             Text(
                 "${item.rows}×${item.columns} • Level #${item.mazeSeed}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.62f),
             )
             Text("${item.moves} moves • ${formatDuration(item.elapsedMs)}")
             RecordDate(item.createdAt)
@@ -249,7 +250,7 @@ private fun RecordDate(timestamp: Long) {
             DateFormat.MEDIUM,
             DateFormat.SHORT,
         ).format(Date(timestamp)),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Color.White.copy(alpha = 0.62f),
         style = MaterialTheme.typography.bodySmall,
     )
 }
