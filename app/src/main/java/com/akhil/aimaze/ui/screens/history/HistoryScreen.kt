@@ -25,6 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.data.history.AiMazeDatabase
+import com.akhil.aimaze.ui.game.GameBackdrop
+import com.akhil.aimaze.ui.game.GameBackdropStyle
 import com.akhil.aimaze.data.history.RaceRecordEntity
 import com.akhil.aimaze.data.history.RaceRecordRepository
 import com.akhil.aimaze.data.history.SoloRunRecordEntity
@@ -48,9 +50,9 @@ fun HistoryScreen(
     val scope = rememberCoroutineScope()
     val isEmpty = races.isEmpty() && soloRuns.isEmpty()
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
+    GameBackdrop(
+        style = GameBackdropStyle.Gameplay,
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
