@@ -1,6 +1,9 @@
 package com.akhil.aimaze.ui.screens.comparison
 
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +42,7 @@ import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.pathfinding.AStarPathfinder
 import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
+import com.akhil.aimaze.ui.game.rememberGameFeedback
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -57,6 +61,9 @@ fun ComparisonScreen(
     var raceStarted by remember(mazeSize, levelSeed) { mutableStateOf(false) }
     var winner by remember(mazeSize, levelSeed) { mutableStateOf<String?>(null) }
     var botIndex by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
+    var countdown by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
+    var startToken by remember { mutableIntStateOf(0) }
+    val feedback = rememberGameFeedback()
 
     val maze = remember(mazeSize, levelSeed) {
         DepthFirstMazeGenerator.generate(mazeSize, mazeSize, seed = levelSeed)
@@ -68,8 +75,24 @@ fun ComparisonScreen(
         mutableStateOf(MazePlayState.initial(maze))
     }
 
+    LaunchedEffect(startToken) {
+        if (startToken == 0) return@LaunchedEffect
+        playState = MazePlayState.initial(maze)
+        botIndex = 0
+        winner = null
+        for (value in 3 downTo 1) {
+            countdown = value
+            feedback.countdown()
+            delay(650)
+        }
+        countdown = 0
+        feedback.start()
+        raceStarted = true
+    }
+
     LaunchedEffect(winner) {
         val raceWinner = winner ?: return@LaunchedEffect
+        if (raceWinner == "PLAYER") feedback.win() else feedback.lose()
         raceRepository.save(
             rows = maze.rows,
             columns = maze.columns,
@@ -153,13 +176,37 @@ fun ComparisonScreen(
                         botPosition = botPath.getOrNull(botIndex),
                         enabled = raceStarted && winner == null,
                         onMove = { direction ->
-                            val moved = playState.move(direction)
-                            playState = moved
-                            if (moved.completed && winner == null) {
-                                winner = "PLAYER"
+                            val before = playState
+                            val moved = before.move(direction)
+                            if (moved === before) {
+                                feedback.blocked()
+                            } else {
+                                feedback.move()
+                                playState = moved
+                                if (moved.completed && winner == null) {
+                                    winner = "PLAYER"
+                                }
                             }
                         },
                     )
+
+                    AnimatedVisibility(
+                        visible = countdown > 0,
+                        enter = fadeIn() + scaleIn(),
+                        modifier = Modifier.matchParentSize(),
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = androidx.compose.ui.Alignment.Center,
+                        ) {
+                            Text(
+                                countdown.toString(),
+                                style = MaterialTheme.typography.displayLarge,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
             }
 
@@ -184,13 +231,11 @@ fun ComparisonScreen(
                 }
             }
 
-            if (!raceStarted || winner != null) {
+            if ((!raceStarted || winner != null) && countdown == 0) {
                 Button(
                     onClick = {
-                        playState = MazePlayState.initial(maze)
-                        botIndex = 0
-                        winner = null
-                        raceStarted = true
+                        raceStarted = false
+                        startToken += 1
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
@@ -233,29 +278,6 @@ fun ComparisonScreen(
                     }
                 }
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            "UNDER THE HOOD",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Black,
-                        )
-                        Text(
-                            "The bot uses A* search and follows an optimal route of ${botSearch.pathLength} moves.",
-                        )
-                        Text(
-                            "A* explored ${botSearch.nodesExplored} cells to solve this level.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
             }
         }
     }
