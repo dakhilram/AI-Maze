@@ -1,5 +1,8 @@
 package com.akhil.aimaze.ui.screens.home
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,24 +18,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.akhil.aimaze.R
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GamePreferences
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 import com.akhil.aimaze.ui.navigation.AppDestination
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(
@@ -40,7 +51,9 @@ fun HomeScreen(
     onDestinationSelected: (AppDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val feedback = rememberGameFeedback()
+    val campaignLevel = GamePreferences(context).campaignLevel
     val play = destinations.firstOrNull { it == AppDestination.Play }
     val daily = destinations.firstOrNull { it == AppDestination.Daily }
     val timeAttack = destinations.firstOrNull { it == AppDestination.TimeAttack }
@@ -49,12 +62,33 @@ fun HomeScreen(
     val settings = destinations.firstOrNull { it == AppDestination.Settings }
     val howToPlay = destinations.firstOrNull { it == AppDestination.About }
 
+    var revealed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(80)
+        revealed = true
+    }
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (revealed) 1f else 0f,
+        animationSpec = tween(420, easing = FastOutSlowInEasing),
+        label = "homeAlpha",
+    )
+    val contentOffset by animateFloatAsState(
+        targetValue = if (revealed) 0f else 34f,
+        animationSpec = tween(420, easing = FastOutSlowInEasing),
+        label = "homeOffset",
+    )
+
     GameBackdrop(
         style = GameBackdropStyle.Home,
         modifier = modifier,
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = contentAlpha
+                    translationY = contentOffset
+                },
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 26.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -73,7 +107,7 @@ fun HomeScreen(
                     fontWeight = FontWeight.Black,
                 )
                 Text(
-                    text = "Swipe through shifting mazes, beat the clock, and outrun the bot.",
+                    text = "500 handcrafted-feeling procedural levels, daily challenges, timed runs, and bot races.",
                     modifier = Modifier.padding(top = 8.dp),
                     color = Color.White.copy(alpha = 0.72f),
                     style = MaterialTheme.typography.bodyLarge,
@@ -83,13 +117,14 @@ fun HomeScreen(
             play?.let { destination ->
                 item {
                     HeroModeCard(
-                        title = "MAZE RUN",
-                        subtitle = "Classic run • stars • par score",
+                        title = "CONTINUE • LEVEL $campaignLevel",
+                        subtitle = "${GamePreferences.CAMPAIGN_LEVELS} levels to beat • more coming soon",
                         cta = "PLAY",
+                        progress = campaignLevel.toFloat() / GamePreferences.CAMPAIGN_LEVELS,
                         gradient = Brush.linearGradient(
                             listOf(
                                 Color(0xFFFF8A1F),
-                                Color(0xFFB84E00),
+                                Color(0xFFC44A00),
                             ),
                         ),
                         onClick = {
@@ -105,7 +140,7 @@ fun HomeScreen(
                     UtilityCard(
                         modifier = Modifier.fillMaxWidth(),
                         title = "DAILY CHALLENGE",
-                        subtitle = "One maze for everyone today • moves + speed",
+                        subtitle = "One maze for today • score moves + speed",
                         onClick = {
                             feedback.button()
                             onDestinationSelected(destination)
@@ -116,8 +151,8 @@ fun HomeScreen(
 
             item {
                 Text(
-                    text = "CHALLENGES",
-                    color = Color.White.copy(alpha = 0.6f),
+                    text = "CHALLENGE MODES",
+                    color = Color.White.copy(alpha = 0.62f),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Black,
                 )
@@ -134,7 +169,7 @@ fun HomeScreen(
                             badge = "⏱",
                             title = "TIME ATTACK",
                             subtitle = "Race the clock",
-                            tint = Color(0xFF4F7CFF),
+                            tint = Color(0xFF315FD7),
                             onClick = {
                                 feedback.button()
                                 onDestinationSelected(destination)
@@ -147,7 +182,7 @@ fun HomeScreen(
                             badge = "⚡",
                             title = "BEAT THE BOT",
                             subtitle = "Live maze race",
-                            tint = Color(0xFF8B5CF6),
+                            tint = Color(0xFF7047C7),
                             onClick = {
                                 feedback.button()
                                 onDestinationSelected(destination)
@@ -162,7 +197,7 @@ fun HomeScreen(
                     UtilityCard(
                         modifier = Modifier.fillMaxWidth(),
                         title = "RECORDS",
-                        subtitle = "Wins • stars • times",
+                        subtitle = "Campaign clears • stars • times • race wins",
                         onClick = {
                             feedback.button()
                             onDestinationSelected(destination)
@@ -221,6 +256,7 @@ private fun HeroModeCard(
     title: String,
     subtitle: String,
     cta: String,
+    progress: Float,
     gradient: Brush,
     onClick: () -> Unit,
 ) {
@@ -228,26 +264,33 @@ private fun HeroModeCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(190.dp)
+            .height(206.dp)
             .clip(shape)
             .background(gradient)
+            .border(1.dp, Color.White.copy(alpha = 0.16f), shape)
             .clickable(onClick = onClick)
             .padding(22.dp),
     ) {
         Column(
             modifier = Modifier.align(Alignment.BottomStart),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
                 text = title,
                 color = Color.White,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
             )
             Text(
                 text = subtitle,
-                color = Color.White.copy(alpha = 0.78f),
+                color = Color.White.copy(alpha = 0.82f),
                 style = MaterialTheme.typography.bodyMedium,
+            )
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth(0.70f),
+                color = Color.White,
+                trackColor = Color.Black.copy(alpha = 0.18f),
             )
         }
 
@@ -284,12 +327,12 @@ private fun ChallengeCard(
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        tint.copy(alpha = 0.88f),
-                        Color(0xFF111722),
+                        tint,
+                        Color(0xE810141C),
                     ),
                 ),
             )
-            .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
+            .border(1.dp, Color.White.copy(alpha = 0.10f), shape)
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
@@ -307,7 +350,7 @@ private fun ChallengeCard(
             )
             Text(
                 text = subtitle,
-                color = Color.White.copy(alpha = 0.62f),
+                color = Color.White.copy(alpha = 0.68f),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -325,8 +368,8 @@ private fun UtilityCard(
     Column(
         modifier = modifier
             .clip(shape)
-            .background(Color(0xB31A2230))
-            .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
+            .background(Color(0xD9181F2A))
+            .border(1.dp, Color.White.copy(alpha = 0.10f), shape)
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -339,7 +382,7 @@ private fun UtilityCard(
         )
         Text(
             text = subtitle,
-            color = Color.White.copy(alpha = 0.58f),
+            color = Color.White.copy(alpha = 0.62f),
             style = MaterialTheme.typography.bodySmall,
         )
     }
