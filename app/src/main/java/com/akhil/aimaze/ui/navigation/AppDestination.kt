@@ -10,6 +10,7 @@ enum class AppDestination(
 ) {
     Home("home", R.string.app_name, R.string.home_description),
     Play("play", R.string.play_title, R.string.play_description),
+    Daily("daily", R.string.daily_title, R.string.daily_description),
     TimeAttack("time_attack", R.string.time_attack_title, R.string.time_attack_description),
     Comparison("comparison", R.string.comparison_title, R.string.comparison_description),
     History("history", R.string.history_title, R.string.history_description),
@@ -18,6 +19,6 @@ enum class AppDestination(
     ;
 
     companion object {
-        val homeSections = listOf(Play, TimeAttack, Comparison, History, Settings, About)
+        val homeSections = listOf(Play, Daily, TimeAttack, Comparison, History, Settings, About)
     }
 }
