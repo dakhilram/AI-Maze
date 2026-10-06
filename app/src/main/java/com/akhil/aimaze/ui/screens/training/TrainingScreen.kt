@@ -79,7 +79,7 @@ fun TrainingScreen(
                 }
                 Column {
                     Text(
-                        "Training Lab",
+                        "Solver Lab",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                     )
