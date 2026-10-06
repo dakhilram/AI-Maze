@@ -1,184 +1,158 @@
-# AI Maze
+# Maze Rush
 
-AI Maze is an offline Android application for visualizing reinforcement learning and classical pathfinding inside procedurally generated mazes.
+Maze Rush is a polished offline Android maze game built with Kotlin and Jetpack Compose.
 
-The project is built as a portfolio-quality demonstration of Kotlin, Jetpack Compose, Q-Learning, graph search, algorithm benchmarking, local persistence, testing, and Android architecture.
+The player experience is intentionally game-first: swipe controls, animated movement, sound and haptic feedback, multiple modes, local records, difficulty scaling, and replayable procedurally generated levels.
 
-## Highlights
+The repository also demonstrates deeper engineering work such as procedural generation, pathfinding, persistence, testing, and Android CI.
 
-- Fully offline: no backend, API keys, accounts, ads, analytics, or network permission.
-- Procedural perfect mazes generated with randomized depth-first search.
-- Reproducible maze topology through deterministic seeds.
-- Manual maze solving with wall-aware movement.
-- Q-Learning implemented from scratch in Kotlin.
-- A* and Dijkstra shortest-path search.
-- Seeded Random agent as a stochastic baseline.
-- Benchmarking that keeps deterministic search, reinforcement learning, and stochastic metrics conceptually separate.
-- Local benchmark history with Room.
-- Jetpack Compose UI with light/dark themes.
-- Unit tests for maze invariants, generation, movement, Q-Learning, pathfinding, baselines, and benchmarking.
+## Game modes
 
-## Algorithms
+### Maze Run
 
-### Maze generation
+Classic endless play.
 
-AI Maze uses iterative randomized depth-first search (recursive backtracker). Every cell begins enclosed by walls. The generator repeatedly visits an unvisited neighbor, removes the shared wall in both cells, and backtracks when no unvisited neighbor remains.
+- Swipe directly on the maze
+- Move and time tracking
+- Par scoring
+- 1–3 star result
+- Easy / Normal / Hard / Expert sizes
+- Restart and next-maze flow
+- Animated player movement
+- Goal pulse
+- Wall-hit shake, sound, and haptics
 
-For a maze with `V` cells, the generator creates exactly `V - 1` passages. The resulting maze is connected and acyclic, so there is exactly one path between every pair of cells.
+### Time Attack
 
-### Q-Learning
+Escape before time expires.
 
-Each maze cell is a state. The action space is:
+- 3-2-1 countdown
+- Difficulty-specific time limits
+- Countdown sounds
+- Win / timeout feedback
+- Local run records
 
-- North
-- East
-- South
-- West
+### Beat the Bot
 
-The agent uses epsilon-greedy exploration and updates Q-values with the standard temporal-difference rule:
+Race the same maze against a moving opponent.
 
-```text
-Q(s,a) <- Q(s,a) + alpha * [r + gamma * max Q(s',a') - Q(s,a)]
-```
+- Shared maze topology
+- Real-time bot movement
+- Countdown start
+- Win / loss result
+- Local race history
+- Difficulty scaling
 
-Training exposes:
+### Records
 
-- episode number
-- reward
-- step count
-- success
-- exploration rate
-- success rate
-- learned greedy path
+Local on-device history for:
 
-### A*
+- Maze Run clears
+- Time Attack clears
+- Beat the Bot wins/losses
+- Stars
+- Move counts
+- Completion times
 
-A* performs deterministic shortest-path search using Manhattan distance as an admissible heuristic for the unit-cost rectangular grid.
+No account or server is required.
 
-### Dijkstra
-
-Dijkstra explores states in increasing path-cost order. It also returns an optimal path but does not use a goal-directed heuristic.
-
-### Random baseline
-
-The Random agent chooses only among valid neighboring cells. It is intentionally weak and stochastic. It is evaluated across repeated trials rather than presented as equivalent to a deterministic shortest-path algorithm.
-
-## Benchmark methodology
-
-All algorithms operate on the same generated maze for a benchmark run.
-
-**A* / Dijkstra**
-
-- path length
-- nodes explored
-- one-shot execution time
-
-**Q-Learning**
-
-- training episodes
-- training success rate
-- learned path length
-- final epsilon
-- training time
-
-**Random baseline**
-
-- trial count
-- success rate
-- average steps among successful trials
-- best successful path
-
-Q-Learning training time is intentionally not presented as directly equivalent to A*/Dijkstra one-shot search time.
-
-## Architecture
-
-```text
-com.akhil.aimaze
-|
-+-- domain
-|   +-- maze              Immutable maze model and movement rules
-|   +-- maze.generation   Seeded DFS maze generation
-|   +-- play              Manual play state
-|   +-- rl                Q-Learning
-|   +-- pathfinding       A* and Dijkstra
-|   +-- baseline          Random agent
-|   +-- benchmark         Fair benchmark orchestration
-|
-+-- data
-|   +-- history           Room database, DAO, repository
-|
-+-- ui
-    +-- components        Shared maze visualization
-    +-- navigation        Compose navigation
-    +-- screens           Home, Play, Train, Compare, History, How It Works
-    +-- theme             AI Maze Material 3 theme
-```
-
-The domain layer is intentionally independent from Android and Compose where possible so algorithm logic can be tested as ordinary Kotlin.
-
-See [Architecture](docs/ARCHITECTURE.md), [Privacy & Security](docs/PRIVACY_SECURITY.md), [Release Guide](docs/RELEASE.md), and [Google Play Preparation](docs/PLAY_STORE.md).
-
-## Technology
+## Android engineering
 
 - Kotlin
 - Jetpack Compose
 - Material 3
-- AndroidX Navigation Compose
+- Compose animations
+- Gesture input
+- Canvas rendering
+- Sound feedback with Android ToneGenerator
+- Haptic feedback
 - Room / SQLite
-- Gradle Kotlin DSL
-- JUnit 4
-- GitHub Actions
+- Navigation Compose
+- Coroutine-driven timers and race loops
+- Adaptive launcher icon
+- GitHub Actions build + test pipeline
+- Installable debug APK artifact from CI
 
-Current Android configuration:
+## Game / algorithm engineering
 
-- minSdk 24
-- targetSdk 37
-- compileSdk 37
+The player does not need to know about the algorithms used internally.
 
-## Build
+Under the hood the project contains:
 
-Clone the repository and open it in Android Studio, or build from a terminal.
+- seeded randomized depth-first maze generation
+- immutable maze/domain model
+- A* shortest-path search
+- Dijkstra shortest-path search
+- random baseline agent
+- Q-Learning experiments used as developer learning / portfolio work
+- benchmark tooling and tests
+
+Only gameplay-relevant behavior is exposed to the player.
+
+## Architecture
+
+```text
+UI / Game screens
+      |
+      v
+Game state + domain
+      |
+      +-- Maze generation
+      +-- Movement rules
+      +-- Pathfinding
+      +-- Scoring
+      |
+      v
+Local persistence (Room)
+```
+
+Most maze and algorithm logic is ordinary Kotlin with no Compose dependency, making it straightforward to unit test.
+
+## Privacy
+
+Maze Rush is fully offline.
+
+- no account
+- no ads
+- no analytics
+- no backend
+- no API keys
+- no INTERNET permission
+- no runtime permissions
+- Android cloud backup disabled
+
+## Build locally
 
 Windows:
 
 ```powershell
-.\gradlew.bat test
-.\gradlew.bat assembleDebug
+.\gradlew.bat test assembleDebug
 ```
 
-macOS/Linux:
-
-```bash
-./gradlew test
-./gradlew assembleDebug
-```
-
-The debug APK is produced under:
+Debug APK:
 
 ```text
-app/build/outputs/apk/debug/
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Privacy
+## Install a CI test build
 
-AI Maze does not require internet access or runtime permissions. Benchmark history remains in the application sandbox and Android backup is disabled.
+Every successful `main` build uploads an artifact named:
 
-## Project goals
+```text
+maze-rush-debug-apk
+```
 
-This repository demonstrates practical understanding of:
+Open the repository's **Actions** tab, open the latest successful **Android CI** run, and download the artifact.
 
-- reinforcement-learning fundamentals
-- Q-Learning and epsilon-greedy exploration
-- reward design and state/action spaces
-- A* and Dijkstra
-- stochastic baselines
-- algorithm benchmarking
-- deterministic procedural generation
-- Kotlin and Android development
-- Jetpack Compose visualization
-- local persistence
-- software architecture and testing
+Unzip it and install `app-debug.apk` on an Android device after allowing installation from that source.
+
+## Resume-ready summary
+
+**Maze Rush — Android Game | Kotlin, Jetpack Compose, Room**
+
+Built an offline procedural maze game with swipe-based controls, animated Canvas rendering, sound/haptic feedback, timed challenges, real-time bot races, local score persistence, seeded maze generation, pathfinding-based gameplay, unit tests, and GitHub Actions CI producing installable Android builds.
 
 ## Status
 
-Core application functionality is implemented. Final device verification, release signing, screenshots/GIFs, and Google Play Console submission are release-stage tasks.
+Active development / device testing.
