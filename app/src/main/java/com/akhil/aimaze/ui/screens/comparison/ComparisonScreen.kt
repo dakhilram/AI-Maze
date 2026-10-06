@@ -42,6 +42,8 @@ import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.pathfinding.AStarPathfinder
 import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
+import com.akhil.aimaze.ui.game.GameBackdrop
+import com.akhil.aimaze.ui.game.GameBackdropStyle
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -117,9 +119,9 @@ fun ComparisonScreen(
         }
     }
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
+    GameBackdrop(
+        style = GameBackdropStyle.Gameplay,
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
