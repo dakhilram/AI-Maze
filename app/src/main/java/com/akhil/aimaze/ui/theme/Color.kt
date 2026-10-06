@@ -2,14 +2,17 @@ package com.akhil.aimaze.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val MazeTealLight = Color(0xFF4FD8D6)
-val MazeTealDark = Color(0xFF006A6A)
-val MazeSlateLight = Color(0xFFB0CCCC)
-val MazeSlateDark = Color(0xFF4A6363)
-val MazeIndigoLight = Color(0xFFC1C3FF)
-val MazeIndigoDark = Color(0xFF5358C8)
+val GameOrange = Color(0xFFFF8A1F)
+val GameGold = Color(0xFFFFC857)
+val GameBlue = Color(0xFF4F7CFF)
+val GameGreen = Color(0xFF57D68D)
 
-val MazeBackgroundLight = Color(0xFFF7FAFA)
-val MazeSurfaceLight = Color(0xFFF7FAFA)
-val MazeBackgroundDark = Color(0xFF0E1414)
-val MazeSurfaceDark = Color(0xFF0E1414)
+val GameBackground = Color(0xFF10131A)
+val GameSurface = Color(0xFF171C26)
+val GameSurfaceRaised = Color(0xFF202735)
+val GameText = Color(0xFFF6F7FB)
+val GameTextMuted = Color(0xFFAAB2C0)
+
+val GameLightBackground = Color(0xFFF4F6FA)
+val GameLightSurface = Color(0xFFFFFFFF)
+val GameLightText = Color(0xFF161A22)
