@@ -10,3 +10,8 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# Android signing keys
+*.jks
+*.keystore
+keystore.properties
