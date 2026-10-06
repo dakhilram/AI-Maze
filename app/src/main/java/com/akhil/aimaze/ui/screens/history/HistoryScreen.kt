@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.data.history.AiMazeDatabase
 import com.akhil.aimaze.data.history.RaceRecordEntity
 import com.akhil.aimaze.data.history.RaceRecordRepository
+import com.akhil.aimaze.data.history.SoloRunRecordEntity
+import com.akhil.aimaze.data.history.SoloRunRecordRepository
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.launch
@@ -37,11 +39,14 @@ fun HistoryScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val repository = remember(context) {
-        RaceRecordRepository(AiMazeDatabase.get(context).raceRecordDao())
-    }
-    val records by repository.observeAll().collectAsState(initial = emptyList())
+    val database = remember(context) { AiMazeDatabase.get(context) }
+    val raceRepository = remember(database) { RaceRecordRepository(database.raceRecordDao()) }
+    val soloRepository = remember(database) { SoloRunRecordRepository(database.soloRunRecordDao()) }
+
+    val races by raceRepository.observeAll().collectAsState(initial = emptyList())
+    val soloRuns by soloRepository.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
+    val isEmpty = races.isEmpty() && soloRuns.isEmpty()
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -58,16 +63,17 @@ fun HistoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                OutlinedButton(
-                    onClick = onBack,
-                    shape = RoundedCornerShape(16.dp),
-                ) {
+                OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) {
                     Text("‹")
                 }
-
-                if (records.isNotEmpty()) {
+                if (!isEmpty) {
                     OutlinedButton(
-                        onClick = { scope.launch { repository.clearAll() } },
+                        onClick = {
+                            scope.launch {
+                                raceRepository.clearAll()
+                                soloRepository.clearAll()
+                            }
+                        },
                         shape = RoundedCornerShape(16.dp),
                     ) {
                         Text("CLEAR")
@@ -81,56 +87,73 @@ fun HistoryScreen(
                 fontWeight = FontWeight.Black,
             )
             Text(
-                "Your Beat the Bot races are saved locally on this device.",
+                "Your runs are stored only on this device.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            if (records.isEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            "NO RACES YET",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Black,
-                        )
-                        Text(
-                            "Play Beat the Bot to create your first race record.",
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
-                }
+            if (isEmpty) {
+                EmptyRecords()
             } else {
-                val wins = records.count { it.winner == "PLAYER" }
-                val losses = records.size - wins
-
+                val wins = races.count { it.winner == "PLAYER" }
+                val stars = soloRuns.sumOf { it.stars }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    SummaryCard("WINS", wins.toString(), Modifier.weight(1f))
-                    SummaryCard("LOSSES", losses.toString(), Modifier.weight(1f))
-                    SummaryCard("RACES", records.size.toString(), Modifier.weight(1f))
+                    SummaryCard("CLEARS", soloRuns.size.toString(), Modifier.weight(1f))
+                    SummaryCard("RACE WINS", wins.toString(), Modifier.weight(1f))
+                    SummaryCard("STARS", stars.toString(), Modifier.weight(1f))
                 }
 
-                records.forEachIndexed { index, item ->
-                    RaceRecordCard(
-                        rank = index + 1,
-                        item = item,
-                    )
+                if (soloRuns.isNotEmpty()) {
+                    SectionTitle("SOLO RUNS")
+                    soloRuns.take(12).forEach { SoloRecordCard(it) }
+                }
+
+                if (races.isNotEmpty()) {
+                    SectionTitle("BEAT THE BOT")
+                    races.take(12).forEach { RaceRecordCard(it) }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun EmptyRecords() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                "NO RECORDS YET",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Black,
+            )
+            Text(
+                "Clear a Maze Run, finish a Time Attack, or race the bot to create your first record.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Black,
+    )
 }
 
 @Composable
@@ -139,16 +162,9 @@ private fun SummaryCard(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-    ) {
+    Card(modifier = modifier, shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Black,
-            )
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
             Text(
                 label,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -160,60 +176,81 @@ private fun SummaryCard(
 }
 
 @Composable
-private fun RaceRecordCard(
-    rank: Int,
-    item: RaceRecordEntity,
-) {
-    val playerWon = item.winner == "PLAYER"
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
-    ) {
+private fun SoloRecordCard(item: SoloRunRecordEntity) {
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    "#$rank  •  ${item.rows}×${item.columns}",
+                    if (item.mode == "TIME_ATTACK") "TIME ATTACK" else "MAZE RUN",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                )
+                Text(
+                    "★".repeat(item.stars) + "☆".repeat(3 - item.stars),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Black,
+                )
+            }
+            Text(
+                "${item.rows}×${item.columns} • Level #${item.mazeSeed}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text("${item.moves} moves • ${formatDuration(item.elapsedMs)}")
+            RecordDate(item.createdAt)
+        }
+    }
+}
+
+@Composable
+private fun RaceRecordCard(item: RaceRecordEntity) {
+    val playerWon = item.winner == "PLAYER"
+    Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "${item.rows}×${item.columns} • Level #${item.mazeSeed}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
                 )
                 Text(
                     if (playerWon) "WIN" else "LOSS",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (playerWon) {
-                        MaterialTheme.colorScheme.tertiary
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
+                    color = if (playerWon) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Black,
                 )
             }
-
-            Text(
-                "Level #${item.mazeSeed}",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelMedium,
-            )
-
-            Text(
-                "You: ${item.playerMoves} moves   •   Bot: ${item.botSteps} steps",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            Text(
-                DateFormat.getDateTimeInstance(
-                    DateFormat.MEDIUM,
-                    DateFormat.SHORT,
-                ).format(Date(item.createdAt)),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text("You: ${item.playerMoves} moves • Bot: ${item.botSteps} steps")
+            RecordDate(item.createdAt)
         }
     }
+}
+
+@Composable
+private fun RecordDate(timestamp: Long) {
+    Text(
+        DateFormat.getDateTimeInstance(
+            DateFormat.MEDIUM,
+            DateFormat.SHORT,
+        ).format(Date(timestamp)),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+    )
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalSeconds = ms / 1_000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
 }
