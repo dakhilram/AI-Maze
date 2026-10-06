@@ -1,9 +1,10 @@
 package com.akhil.aimaze.ui.screens.comparison
 
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,22 +15,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -42,8 +44,12 @@ import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.pathfinding.AStarPathfinder
 import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
+import com.akhil.aimaze.ui.game.DifficultySelector
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GameBackButton
+import com.akhil.aimaze.ui.game.GameStatTile
+import com.akhil.aimaze.ui.game.WinBurst
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -59,20 +65,21 @@ fun ComparisonScreen(
     }
 
     var mazeSize by remember { mutableIntStateOf(8) }
-    var levelSeed by remember { mutableLongStateOf(77L) }
-    var raceStarted by remember(mazeSize, levelSeed) { mutableStateOf(false) }
-    var winner by remember(mazeSize, levelSeed) { mutableStateOf<String?>(null) }
-    var botIndex by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
-    var countdown by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
+    var mazeNumber by remember { mutableIntStateOf(1) }
+    val mazeSeed = remember(mazeSize, mazeNumber) {
+        70_000L + mazeSize * 997L + mazeNumber * 7_919L
+    }
+    var raceStarted by remember(mazeSize, mazeSeed) { mutableStateOf(false) }
+    var winner by remember(mazeSize, mazeSeed) { mutableStateOf<String?>(null) }
+    var botIndex by remember(mazeSize, mazeSeed) { mutableIntStateOf(0) }
+    var countdown by remember(mazeSize, mazeSeed) { mutableIntStateOf(0) }
     var startToken by remember { mutableIntStateOf(0) }
     val feedback = rememberGameFeedback()
 
-    val maze = remember(mazeSize, levelSeed) {
-        DepthFirstMazeGenerator.generate(mazeSize, mazeSize, seed = levelSeed)
+    val maze = remember(mazeSize, mazeSeed) {
+        DepthFirstMazeGenerator.generate(mazeSize, mazeSize, seed = mazeSeed)
     }
-    val botSearch = remember(maze) { AStarPathfinder.solve(maze) }
-    val botPath = botSearch.path
-
+    val botPath = remember(maze) { AStarPathfinder.solve(maze).path }
     var playState by remember(maze) {
         mutableStateOf(MazePlayState.initial(maze))
     }
@@ -94,11 +101,15 @@ fun ComparisonScreen(
 
     LaunchedEffect(winner) {
         val raceWinner = winner ?: return@LaunchedEffect
-        if (raceWinner == "PLAYER") feedback.win() else feedback.lose()
+        if (raceWinner == "PLAYER") {
+            feedback.win()
+        } else {
+            feedback.lose()
+        }
         raceRepository.save(
             rows = maze.rows,
             columns = maze.columns,
-            mazeSeed = levelSeed,
+            mazeSeed = mazeSeed,
             winner = raceWinner,
             playerMoves = playState.moveCount,
             botSteps = botIndex,
@@ -111,10 +122,10 @@ fun ComparisonScreen(
         while (raceStarted && winner == null && botIndex < botPath.lastIndex) {
             delay(botDelayMillis(mazeSize))
             if (winner != null) break
-
             botIndex += 1
             if (botIndex >= botPath.lastIndex && winner == null) {
                 winner = "BOT"
+                raceStarted = false
             }
         }
     }
@@ -129,48 +140,61 @@ fun ComparisonScreen(
                 .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(
-                    onClick = onBack,
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Text("‹")
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                GameBackButton(
+                    onClick = {
+                        feedback.button()
+                        onBack()
+                    },
+                )
                 Column {
                     Text(
                         "Beat the Bot",
+                        color = Color.White,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                     )
                     Text(
-                        "You and the bot race the exact same maze.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        "Same maze. Same start. First to the exit wins.",
+                        color = Color.White.copy(alpha = 0.62f),
                     )
                 }
             }
 
-            DifficultyPicker(
+            DifficultySelector(
                 selectedSize = mazeSize,
                 enabled = !raceStarted && countdown == 0,
                 onSizeSelected = {
                     mazeSize = it
-                    raceStarted = false
+                    mazeNumber = 1
                     winner = null
+                    raceStarted = false
                     botIndex = 0
                 },
             )
 
-            RaceHud(
-                playerMoves = playState.moveCount,
-                botSteps = botIndex,
-                levelSeed = levelSeed,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                GameStatTile("YOU", playState.moveCount.toString(), Modifier.weight(1f))
+                GameStatTile("BOT", botIndex.toString(), Modifier.weight(1f))
+                GameStatTile("MAZE", "#$mazeNumber", Modifier.weight(1f))
+            }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    containerColor = Color(0xE8212935),
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.12f),
                 ),
             ) {
                 Box(modifier = Modifier.padding(12.dp)) {
@@ -188,6 +212,7 @@ fun ComparisonScreen(
                                 playState = moved
                                 if (moved.completed && winner == null) {
                                     winner = "PLAYER"
+                                    raceStarted = false
                                 }
                             }
                         },
@@ -196,43 +221,84 @@ fun ComparisonScreen(
                     if (countdown > 0) {
                         Box(
                             modifier = Modifier.matchParentSize(),
-                            contentAlignment = androidx.compose.ui.Alignment.Center,
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 countdown.toString(),
+                                color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.displayLarge,
                                 fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
                     }
                 }
             }
 
-            when (winner) {
-                "PLAYER" -> ResultCard(
-                    title = "YOU WIN",
-                    subtitle = "You escaped before the optimal-route bot.",
-                )
-                "BOT" -> ResultCard(
-                    title = "BOT WINS",
-                    subtitle = "Try again and cut unnecessary moves.",
-                )
-                else -> {
-                    Text(
-                        if (raceStarted) {
-                            "GO! Swipe through the maze before the blue bot reaches the exit."
+            AnimatedVisibility(
+                visible = winner != null,
+                enter = fadeIn() + scaleIn(),
+            ) {
+                val playerWon = winner == "PLAYER"
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (playerWon) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
                         } else {
-                            "Orange is you. Blue is the bot. Tap START RACE when you are ready."
+                            Color(0x33FF4D4D)
                         },
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if (playerWon) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.36f)
+                        } else {
+                            Color(0x55FF6868)
+                        },
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Text(
+                            if (playerWon) "YOU WIN" else "BOT WINS",
+                            color = if (playerWon) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                Color(0xFFFF7A7A)
+                            },
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            if (playerWon) {
+                                "Clean run. You reached the exit first."
+                            } else {
+                                "The bot got there first. Cut wasted moves and race again."
+                            },
+                            color = Color.White,
+                        )
+                    }
                 }
+            }
+
+            if (winner == null) {
+                Text(
+                    if (raceStarted) {
+                        "GO! Orange is you. Blue is the bot."
+                    } else {
+                        "Pick a difficulty and start the race when you are ready."
+                    },
+                    color = Color.White.copy(alpha = 0.66f),
+                )
             }
 
             if ((!raceStarted || winner != null) && countdown == 0) {
                 Button(
                     onClick = {
+                        feedback.button()
                         raceStarted = false
                         startToken += 1
                     },
@@ -247,136 +313,33 @@ fun ComparisonScreen(
             }
 
             if (winner != null) {
-                Row(
+                OutlinedButton(
+                    onClick = {
+                        feedback.button()
+                        mazeNumber += 1
+                        raceStarted = false
+                        winner = null
+                        botIndex = 0
+                    },
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.26f),
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White,
+                    ),
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            levelSeed += 1L
-                            raceStarted = false
-                            winner = null
-                            botIndex = 0
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(18.dp),
-                    ) {
-                        Text("NEXT LEVEL", fontWeight = FontWeight.Bold)
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            playState = MazePlayState.initial(maze)
-                            botIndex = 0
-                            winner = null
-                            raceStarted = false
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(18.dp),
-                    ) {
-                        Text("RESET", fontWeight = FontWeight.Bold)
-                    }
+                    Text("NEW MAZE", fontWeight = FontWeight.Black)
                 }
-
             }
         }
-    }
-}
 
-@Composable
-private fun DifficultyPicker(
-    selectedSize: Int,
-    enabled: Boolean,
-    onSizeSelected: (Int) -> Unit,
-) {
-    val options = listOf(
-        8 to "EASY",
-        12 to "NORMAL",
-        16 to "HARD",
-        20 to "EXPERT",
-    )
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        options.forEach { (size, label) ->
-            androidx.compose.material3.FilterChip(
-                selected = selectedSize == size,
-                onClick = { onSizeSelected(size) },
-                enabled = enabled,
-                label = { Text(label, fontWeight = FontWeight.Bold) },
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun RaceHud(
-    playerMoves: Int,
-    botSteps: Int,
-    levelSeed: Long,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        HudTile("YOU", playerMoves.toString(), Modifier.weight(1f))
-        HudTile("BOT", botSteps.toString(), Modifier.weight(1f))
-        HudTile("LEVEL", "#$levelSeed", Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun HudTile(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ResultCard(
-    title: String,
-    subtitle: String,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                title,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
-            )
-            Text(subtitle)
-        }
+        WinBurst(
+            active = winner == "PLAYER",
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
@@ -388,7 +351,6 @@ private fun SwipeRaceBoard(
     onMove: (Direction) -> Unit,
 ) {
     var dragOffset by remember(playState.maze) { mutableStateOf(Offset.Zero) }
-    val swipeThreshold = 36f
 
     MazeBoard(
         maze = playState.maze,
@@ -399,9 +361,7 @@ private fun SwipeRaceBoard(
             .aspectRatio(1f)
             .pointerInput(playState.maze, enabled) {
                 detectDragGestures(
-                    onDragStart = {
-                        dragOffset = Offset.Zero
-                    },
+                    onDragStart = { dragOffset = Offset.Zero },
                     onDrag = { change, dragAmount ->
                         if (enabled) {
                             change.consume()
@@ -409,31 +369,27 @@ private fun SwipeRaceBoard(
                         }
                     },
                     onDragEnd = {
-                        if (enabled) {
+                        if (enabled && dragOffset.getDistance() >= 36f) {
                             val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
                             val direction = when {
-                                dragOffset.getDistance() < swipeThreshold -> null
                                 horizontal && dragOffset.x > 0f -> Direction.EAST
-                                horizontal && dragOffset.x < 0f -> Direction.WEST
-                                !horizontal && dragOffset.y > 0f -> Direction.SOUTH
-                                !horizontal && dragOffset.y < 0f -> Direction.NORTH
-                                else -> null
+                                horizontal -> Direction.WEST
+                                dragOffset.y > 0f -> Direction.SOUTH
+                                else -> Direction.NORTH
                             }
-                            direction?.let(onMove)
+                            onMove(direction)
                         }
                         dragOffset = Offset.Zero
                     },
-                    onDragCancel = {
-                        dragOffset = Offset.Zero
-                    },
+                    onDragCancel = { dragOffset = Offset.Zero },
                 )
             },
     )
 }
 
 private fun botDelayMillis(size: Int): Long = when (size) {
-    8 -> 460L
-    12 -> 420L
-    16 -> 380L
-    else -> 340L
+    8 -> 520L
+    12 -> 470L
+    16 -> 430L
+    else -> 390L
 }
