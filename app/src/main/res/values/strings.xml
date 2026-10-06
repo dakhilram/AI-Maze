@@ -1,18 +1,17 @@
 <resources>
-    <string name="app_name">AI Maze</string>
-    <string name="home_eyebrow">MAZE RUN</string>
-    <string name="home_title">Beat the maze.</string>
-    <string name="home_description">Swipe through handcrafted-feeling generated mazes, train a solver, race algorithms, and chase cleaner runs.</string>
+    <string name="app_name">Maze Rush</string>
+    <string name="home_eyebrow">MAZE RUSH</string>
+    <string name="home_title">Find the exit. Beat your best.</string>
+    <string name="home_description">Swipe through endless mazes, race the clock, and take on the bot.</string>
     <string name="play_title">Maze Run</string>
-    <string name="play_description">Jump straight into a maze and swipe your way to the exit.</string>
-    <string name="training_title">Solver Lab</string>
-    <string name="training_description">See how the solver learns after you have played the maze yourself.</string>
+    <string name="play_description">Classic endless maze runs with move and time scoring.</string>
+    <string name="time_attack_title">Time Attack</string>
+    <string name="time_attack_description">Escape before the countdown hits zero.</string>
     <string name="comparison_title">Beat the Bot</string>
-    <string name="comparison_description">Race an optimal maze-solving bot on the exact same level.</string>
+    <string name="comparison_description">Race a fast maze-solving bot on the same level.</string>
     <string name="history_title">Records</string>
-    <string name="history_description">Review saved benchmark runs and past results.</string>
-    <string name="about_title">Game Guide</string>
-    <string name="about_description">Learn the rules, modes, and what is happening under the hood.</string>
+    <string name="history_description">See your race history, wins, losses, and best runs.</string>
+    <string name="about_title">How to Play</string>
+    <string name="about_description">Learn the controls, scoring, and game modes.</string>
     <string name="back">Back</string>
-    <string name="future_feature">COMING SOON</string>
 </resources>
