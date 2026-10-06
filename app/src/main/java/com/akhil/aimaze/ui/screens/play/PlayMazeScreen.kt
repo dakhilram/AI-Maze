@@ -4,26 +4,23 @@ package com.akhil.aimaze.ui.screens.play
 
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,10 +28,11 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
@@ -42,135 +40,239 @@ import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
 import kotlin.math.abs
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayMazeScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var size by remember { mutableIntStateOf(8) }
-    var seed by remember { mutableLongStateOf(42L) }
-    var seedText by remember { mutableStateOf("42") }
-    var playState by remember(size, seed) {
+    var mazeSize by remember { mutableIntStateOf(8) }
+    var levelSeed by remember { mutableLongStateOf(42L) }
+    var playState by remember(mazeSize, levelSeed) {
         mutableStateOf(
             MazePlayState.initial(
-                DepthFirstMazeGenerator.generate(size, size, seed),
+                DepthFirstMazeGenerator.generate(
+                    rows = mazeSize,
+                    columns = mazeSize,
+                    seed = levelSeed,
+                ),
             ),
         )
     }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Play Maze") },
-                navigationIcon = {
-                    OutlinedButton(onClick = onBack) { Text("Back") }
-                },
-            )
-        },
-    ) { padding ->
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                text = "Solve the maze by swiping directly on the board. Every swipe attempts one move in that direction.",
-                style = MaterialTheme.typography.bodyLarge,
+            GameTopBar(
+                title = "Maze Run",
+                onBack = onBack,
             )
 
-            Row(
+            DifficultyPicker(
+                selectedSize = mazeSize,
+                onSizeSelected = { mazeSize = it },
+            )
+
+            RunHud(
+                moves = playState.moveCount,
+                levelSeed = levelSeed,
+                completed = playState.completed,
+            )
+
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             ) {
-                listOf(8, 12, 16, 20).forEach { option ->
-                    FilterChip(
-                        selected = size == option,
-                        onClick = { size = option },
-                        label = { Text("${option}×${option}") },
+                Box(modifier = Modifier.padding(12.dp)) {
+                    SwipeableMazeBoard(
+                        playState = playState,
+                        onMove = { direction ->
+                            if (!playState.completed) {
+                                playState = playState.move(direction)
+                            }
+                        },
                     )
                 }
             }
 
-            OutlinedTextField(
-                value = seedText,
-                onValueChange = { value ->
-                    seedText = value.filter { it == '-' || it.isDigit() }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Maze seed") },
-                supportingText = { Text("Use the same size and seed to reproduce this maze.") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                trailingIcon = {
-                    Button(
-                        onClick = {
-                            seedText.toLongOrNull()?.let { seed = it }
-                        },
-                        enabled = seedText.toLongOrNull() != null,
-                    ) {
-                        Text("Generate")
-                    }
-                },
-            )
-
-            Text(
-                text = "Seed: $seed  •  Moves: ${playState.moveCount}",
-                style = MaterialTheme.typography.labelLarge,
-            )
-
-            SwipeableMazeBoard(
-                playState = playState,
-                onMove = { direction ->
-                    if (!playState.completed) {
-                        playState = playState.move(direction)
-                    }
-                },
-            )
-
             if (playState.completed) {
-                Text(
-                    text = "Maze solved in ${playState.moveCount} moves!",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                    ),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "MAZE CLEARED",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            text = "${playState.moveCount} moves",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black,
+                        )
+                    }
+                }
             } else {
                 Text(
-                    text = "Swipe up, down, left, or right on the maze to move.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Swipe anywhere on the maze to move one cell.",
+                    modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedButton(onClick = { playState = playState.reset() }) {
-                    Text("Restart")
+                OutlinedButton(
+                    onClick = { playState = playState.reset() },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
+                ) {
+                    Text("RESTART", fontWeight = FontWeight.Bold)
                 }
+
                 Button(
                     onClick = {
-                        seed += 1L
-                        seedText = seed.toString()
+                        levelSeed += 1L
                     },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
                 ) {
-                    Text("New maze")
+                    Text(
+                        text = if (playState.completed) "NEXT MAZE" else "NEW MAZE",
+                        fontWeight = FontWeight.Black,
+                    )
                 }
             }
+        }
+    }
+}
 
+@Composable
+private fun GameTopBar(
+    title: String,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedButton(
+            onClick = onBack,
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Text("‹")
+        }
+        Text(
+            text = title,
+            modifier = Modifier.padding(start = 12.dp),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Black,
+        )
+    }
+}
+
+@Composable
+private fun DifficultyPicker(
+    selectedSize: Int,
+    onSizeSelected: (Int) -> Unit,
+) {
+    val options = listOf(
+        8 to "EASY",
+        12 to "NORMAL",
+        16 to "HARD",
+        20 to "EXPERT",
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { (size, label) ->
+            FilterChip(
+                selected = selectedSize == size,
+                onClick = { onSizeSelected(size) },
+                label = { Text(label, fontWeight = FontWeight.Bold) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RunHud(
+    moves: Int,
+    levelSeed: Long,
+    completed: Boolean,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        HudTile(
+            label = "MOVES",
+            value = moves.toString(),
+            modifier = Modifier.weight(1f),
+        )
+        HudTile(
+            label = "LEVEL",
+            value = "#$levelSeed",
+            modifier = Modifier.weight(1f),
+        )
+        HudTile(
+            label = "STATUS",
+            value = if (completed) "CLEAR" else "RUN",
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun HudTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
             Text(
-                text = "Start = tertiary marker • Goal = secondary marker • Player = primary marker",
-                style = MaterialTheme.typography.bodySmall,
+                text = label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Tip: the seed makes a maze reproducible. The same size and seed always produce the same topology.",
-                style = MaterialTheme.typography.bodySmall,
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
             )
-            Spacer(Modifier.height(8.dp))
         }
     }
 }
@@ -208,7 +310,6 @@ private fun SwipeableMazeBoard(
                             !horizontal && dragOffset.y < 0f -> Direction.NORTH
                             else -> null
                         }
-
                         direction?.let(onMove)
                         dragOffset = Offset.Zero
                     },
