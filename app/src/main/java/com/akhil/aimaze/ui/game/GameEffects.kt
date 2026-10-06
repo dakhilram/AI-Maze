@@ -54,8 +54,8 @@ fun WinBurst(
                 val distance = size.minDimension * distanceScale * progress.value
                 val gravity = size.height * 0.24f * progress.value * progress.value
                 val point = Offset(
-                    x = center.x + cos(angle) * distance,
-                    y = center.y + sin(angle) * distance + gravity,
+                    x = center.x + cos(angle.toDouble()).toFloat() * distance,
+                    y = center.y + sin(angle.toDouble()).toFloat() * distance + gravity,
                 )
                 drawCircle(
                     color = palette[index % palette.size].copy(
