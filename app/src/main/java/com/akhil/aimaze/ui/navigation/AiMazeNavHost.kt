@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.akhil.aimaze.ui.screens.about.AboutScreen
 import com.akhil.aimaze.ui.screens.comparison.ComparisonScreen
+import com.akhil.aimaze.ui.screens.daily.DailyChallengeScreen
 import com.akhil.aimaze.ui.screens.history.HistoryScreen
 import com.akhil.aimaze.ui.screens.home.HomeScreen
 import com.akhil.aimaze.ui.screens.play.PlayMazeScreen
@@ -36,6 +37,9 @@ fun AiMazeNavHost(
         }
         composable(AppDestination.Play.route) {
             PlayMazeScreen(onBack = navController::navigateUp)
+        }
+        composable(AppDestination.Daily.route) {
+            DailyChallengeScreen(onBack = navController::navigateUp)
         }
         composable(AppDestination.TimeAttack.route) {
             TimeAttackScreen(onBack = navController::navigateUp)
