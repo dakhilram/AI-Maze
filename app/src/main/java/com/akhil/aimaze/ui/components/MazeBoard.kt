@@ -1,8 +1,16 @@
 package com.akhil.aimaze.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.runtime.Composable
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
@@ -27,9 +35,41 @@ fun MazeBoard(
     val pathColor = MaterialTheme.colorScheme.primary
     val background = MaterialTheme.colorScheme.surfaceVariant
 
+    val playerRow by animateFloatAsState(
+        targetValue = player?.row?.toFloat() ?: 0f,
+        animationSpec = tween(110, easing = FastOutSlowInEasing),
+        label = "playerRow",
+    )
+    val playerColumn by animateFloatAsState(
+        targetValue = player?.column?.toFloat() ?: 0f,
+        animationSpec = tween(110, easing = FastOutSlowInEasing),
+        label = "playerColumn",
+    )
+    val opponentRow by animateFloatAsState(
+        targetValue = opponent?.row?.toFloat() ?: 0f,
+        animationSpec = tween(180, easing = FastOutSlowInEasing),
+        label = "opponentRow",
+    )
+    val opponentColumn by animateFloatAsState(
+        targetValue = opponent?.column?.toFloat() ?: 0f,
+        animationSpec = tween(180, easing = FastOutSlowInEasing),
+        label = "opponentColumn",
+    )
+
+    val pulseTransition = rememberInfiniteTransition(label = "goalPulse")
+    val goalPulse by pulseTransition.animateFloat(
+        initialValue = 0.82f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(700, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "goalPulseValue",
+    )
+
     Canvas(
         modifier = modifier.semantics {
-            contentDescription = "Maze board with start, goal, walls, and agent state"
+            contentDescription = "Maze board"
         },
     ) {
         drawRect(background)
@@ -42,22 +82,27 @@ fun MazeBoard(
             x = (position.column + 0.5f) * cellWidth,
             y = (position.row + 0.5f) * cellHeight,
         )
+        fun animatedCenter(row: Float, column: Float) = Offset(
+            x = (column + 0.5f) * cellWidth,
+            y = (row + 0.5f) * cellHeight,
+        )
 
         if (path.size > 1) {
             for (index in 0 until path.lastIndex) {
                 drawLine(
-                    color = pathColor.copy(alpha = 0.55f),
+                    color = pathColor.copy(alpha = 0.42f),
                     start = center(path[index]),
                     end = center(path[index + 1]),
-                    strokeWidth = (size.minDimension / 140f).coerceAtLeast(3f),
+                    strokeWidth = (size.minDimension / 145f).coerceAtLeast(3f),
                     cap = StrokeCap.Round,
                 )
             }
         }
 
         val markerRadius = minOf(cellWidth, cellHeight) * 0.23f
-        drawCircle(startColor, markerRadius, center(maze.start))
-        drawCircle(goalColor, markerRadius, center(maze.goal))
+        drawCircle(startColor.copy(alpha = 0.75f), markerRadius * 0.75f, center(maze.start))
+        drawCircle(goalColor.copy(alpha = 0.18f), markerRadius * 1.7f * goalPulse, center(maze.goal))
+        drawCircle(goalColor, markerRadius * goalPulse, center(maze.goal))
 
         for (row in 0 until maze.rows) {
             for (column in 0 until maze.columns) {
@@ -68,34 +113,31 @@ fun MazeBoard(
                 val right = left + cellWidth
                 val bottom = top + cellHeight
 
-                if (cell.northWall) {
-                    drawLine(wallColor, Offset(left, top), Offset(right, top), wallWidth, StrokeCap.Square)
-                }
-                if (cell.westWall) {
-                    drawLine(wallColor, Offset(left, top), Offset(left, bottom), wallWidth, StrokeCap.Square)
-                }
-                if (row == maze.rows - 1 && cell.southWall) {
-                    drawLine(wallColor, Offset(left, bottom), Offset(right, bottom), wallWidth, StrokeCap.Square)
-                }
-                if (column == maze.columns - 1 && cell.eastWall) {
-                    drawLine(wallColor, Offset(right, top), Offset(right, bottom), wallWidth, StrokeCap.Square)
-                }
+                if (cell.northWall) drawLine(wallColor, Offset(left, top), Offset(right, top), wallWidth, StrokeCap.Round)
+                if (cell.westWall) drawLine(wallColor, Offset(left, top), Offset(left, bottom), wallWidth, StrokeCap.Round)
+                if (row == maze.rows - 1 && cell.southWall) drawLine(wallColor, Offset(left, bottom), Offset(right, bottom), wallWidth, StrokeCap.Round)
+                if (column == maze.columns - 1 && cell.eastWall) drawLine(wallColor, Offset(right, top), Offset(right, bottom), wallWidth, StrokeCap.Round)
             }
         }
 
         opponent?.let {
             drawCircle(
                 color = opponentColor,
-                radius = markerRadius * 0.56f,
-                center = center(it),
+                radius = markerRadius * 0.55f,
+                center = animatedCenter(opponentRow, opponentColumn),
             )
         }
 
         player?.let {
             drawCircle(
+                color = playerColor.copy(alpha = 0.25f),
+                radius = markerRadius,
+                center = animatedCenter(playerRow, playerColumn),
+            )
+            drawCircle(
                 color = playerColor,
-                radius = markerRadius * 0.72f,
-                center = center(it),
+                radius = markerRadius * 0.68f,
+                center = animatedCenter(playerRow, playerColumn),
             )
         }
     }
