@@ -58,6 +58,7 @@ import com.akhil.aimaze.ui.game.GameBackdropStyle
 import com.akhil.aimaze.ui.game.GameBackButton
 import com.akhil.aimaze.ui.game.GamePreferences
 import com.akhil.aimaze.ui.game.GameStatTile
+import com.akhil.aimaze.ui.game.WinBurst
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -351,6 +352,11 @@ fun PlayMazeScreen(
                 }
             }
         }
+
+        WinBurst(
+            active = playState.completed,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
