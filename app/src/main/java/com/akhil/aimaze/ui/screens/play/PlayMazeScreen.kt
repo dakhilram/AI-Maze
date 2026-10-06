@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
+import com.akhil.aimaze.domain.pathfinding.AStarPathfinder
 import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
 import kotlin.math.abs
@@ -47,6 +48,8 @@ fun PlayMazeScreen(
 ) {
     var mazeSize by remember { mutableIntStateOf(8) }
     var levelSeed by remember { mutableLongStateOf(42L) }
+    var hintsUsed by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
+    var hintPath by remember(mazeSize, levelSeed) { mutableStateOf(emptyList<com.akhil.aimaze.domain.maze.Position>()) }
     var playState by remember(mazeSize, levelSeed) {
         mutableStateOf(
             MazePlayState.initial(
@@ -83,6 +86,7 @@ fun PlayMazeScreen(
                 moves = playState.moveCount,
                 levelSeed = levelSeed,
                 completed = playState.completed,
+                hintsUsed = hintsUsed,
             )
 
             Card(
@@ -95,9 +99,11 @@ fun PlayMazeScreen(
                 Box(modifier = Modifier.padding(12.dp)) {
                     SwipeableMazeBoard(
                         playState = playState,
+                        hintPath = hintPath,
                         onMove = { direction ->
                             if (!playState.completed) {
                                 playState = playState.move(direction)
+                                hintPath = emptyList()
                             }
                         },
                     )
@@ -140,25 +146,48 @@ fun PlayMazeScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(
-                    onClick = { playState = playState.reset() },
+                    onClick = {
+                        playState = playState.reset()
+                        hintPath = emptyList()
+                        hintsUsed = 0
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
                 ) {
                     Text("RESTART", fontWeight = FontWeight.Bold)
                 }
 
+                OutlinedButton(
+                    onClick = {
+                        val route = AStarPathfinder.solve(
+                            maze = playState.maze,
+                            start = playState.player,
+                            goal = playState.maze.goal,
+                        ).path
+                        hintPath = route.take(2)
+                        if (hintPath.size > 1) hintsUsed += 1
+                    },
+                    enabled = !playState.completed,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(18.dp),
+                ) {
+                    Text("HINT", fontWeight = FontWeight.Bold)
+                }
+
                 Button(
                     onClick = {
                         levelSeed += 1L
+                        hintPath = emptyList()
+                        hintsUsed = 0
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
                 ) {
                     Text(
-                        text = if (playState.completed) "NEXT MAZE" else "NEW MAZE",
+                        text = if (playState.completed) "NEXT" else "NEW",
                         fontWeight = FontWeight.Black,
                     )
                 }
@@ -223,6 +252,7 @@ private fun RunHud(
     moves: Int,
     levelSeed: Long,
     completed: Boolean,
+    hintsUsed: Int,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -239,8 +269,8 @@ private fun RunHud(
             modifier = Modifier.weight(1f),
         )
         HudTile(
-            label = "STATUS",
-            value = if (completed) "CLEAR" else "RUN",
+            label = "HINTS",
+            value = hintsUsed.toString(),
             modifier = Modifier.weight(1f),
         )
     }
@@ -280,6 +310,7 @@ private fun HudTile(
 @Composable
 private fun SwipeableMazeBoard(
     playState: MazePlayState,
+    hintPath: List<com.akhil.aimaze.domain.maze.Position>,
     onMove: (Direction) -> Unit,
 ) {
     var dragOffset by remember(playState.maze) { mutableStateOf(Offset.Zero) }
@@ -288,6 +319,7 @@ private fun SwipeableMazeBoard(
     MazeBoard(
         maze = playState.maze,
         player = playState.player,
+        path = hintPath,
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
