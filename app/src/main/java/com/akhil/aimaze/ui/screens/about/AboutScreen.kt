@@ -18,15 +18,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.akhil.aimaze.ui.game.GameBackdrop
+import com.akhil.aimaze.ui.game.GameBackdropStyle
 
 @Composable
 fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
+    GameBackdrop(
+        style = GameBackdropStyle.Gameplay,
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
