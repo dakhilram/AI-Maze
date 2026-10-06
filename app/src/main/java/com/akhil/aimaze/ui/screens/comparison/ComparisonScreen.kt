@@ -380,26 +380,24 @@ private fun SwipeRaceBoard(
                         dragOffset = Offset.Zero
                     },
                     onDrag = { change, dragAmount ->
-                        if (!enabled) return@detectDragGestures
-                        change.consume()
-                        dragOffset += dragAmount
+                        if (enabled) {
+                            change.consume()
+                            dragOffset += dragAmount
+                        }
                     },
                     onDragEnd = {
-                        if (!enabled) {
-                            dragOffset = Offset.Zero
-                            return@detectDragGestures
+                        if (enabled) {
+                            val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
+                            val direction = when {
+                                dragOffset.getDistance() < swipeThreshold -> null
+                                horizontal && dragOffset.x > 0f -> Direction.EAST
+                                horizontal && dragOffset.x < 0f -> Direction.WEST
+                                !horizontal && dragOffset.y > 0f -> Direction.SOUTH
+                                !horizontal && dragOffset.y < 0f -> Direction.NORTH
+                                else -> null
+                            }
+                            direction?.let(onMove)
                         }
-
-                        val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
-                        val direction = when {
-                            dragOffset.getDistance() < swipeThreshold -> null
-                            horizontal && dragOffset.x > 0f -> Direction.EAST
-                            horizontal && dragOffset.x < 0f -> Direction.WEST
-                            !horizontal && dragOffset.y > 0f -> Direction.SOUTH
-                            !horizontal && dragOffset.y < 0f -> Direction.NORTH
-                            else -> null
-                        }
-                        direction?.let(onMove)
                         dragOffset = Offset.Zero
                     },
                     onDragCancel = {
