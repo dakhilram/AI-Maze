@@ -261,9 +261,9 @@ private fun GameModeCard(
 }
 
 private fun modeGlyph(destination: AppDestination): String = when (destination) {
-    AppDestination.Training -> "T"
-    AppDestination.Comparison -> "R"
-    AppDestination.History -> "#"
+    AppDestination.TimeAttack -> "⏱"
+    AppDestination.Comparison -> "⚡"
+    AppDestination.History -> "★"
     AppDestination.About -> "?"
     else -> "•"
 }
