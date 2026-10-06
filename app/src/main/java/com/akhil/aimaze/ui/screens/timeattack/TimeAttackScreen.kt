@@ -14,8 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.akhil.aimaze.data.history.AiMazeDatabase
+import com.akhil.aimaze.data.history.SoloRunRecordRepository
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.play.MazePlayState
@@ -26,6 +29,11 @@ import kotlin.math.abs
 
 @Composable
 fun TimeAttackScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val soloRepository = remember(context) {
+        SoloRunRecordRepository(AiMazeDatabase.get(context).soloRunRecordDao())
+    }
+
     var mazeSize by remember { mutableIntStateOf(8) }
     var levelSeed by remember { mutableLongStateOf(100L) }
     var playState by remember(mazeSize, levelSeed) {
@@ -36,6 +44,7 @@ fun TimeAttackScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var countdown by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
     var startToken by remember { mutableIntStateOf(0) }
     var lost by remember(mazeSize, levelSeed) { mutableStateOf(false) }
+    var saved by remember(mazeSize, levelSeed) { mutableStateOf(false) }
     val feedback = rememberGameFeedback()
 
     LaunchedEffect(startToken) {
@@ -70,6 +79,24 @@ fun TimeAttackScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         if (playState.completed) {
             running = false
             feedback.win()
+            if (!saved) {
+                val limit = timeLimitFor(mazeSize)
+                val stars = when {
+                    remainingSeconds >= (limit * 0.5f).toInt() -> 3
+                    remainingSeconds >= (limit * 0.2f).toInt() -> 2
+                    else -> 1
+                }
+                soloRepository.save(
+                    mode = "TIME_ATTACK",
+                    rows = playState.maze.rows,
+                    columns = playState.maze.columns,
+                    mazeSeed = levelSeed,
+                    moves = playState.moveCount,
+                    elapsedMs = (limit - remainingSeconds) * 1_000L,
+                    stars = stars,
+                )
+                saved = true
+            }
         }
     }
 
