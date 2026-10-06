@@ -11,7 +11,7 @@ import com.akhil.aimaze.ui.screens.comparison.ComparisonScreen
 import com.akhil.aimaze.ui.screens.history.HistoryScreen
 import com.akhil.aimaze.ui.screens.home.HomeScreen
 import com.akhil.aimaze.ui.screens.play.PlayMazeScreen
-import com.akhil.aimaze.ui.screens.training.TrainingScreen
+import com.akhil.aimaze.ui.screens.timeattack.TimeAttackScreen
 
 @Composable
 fun AiMazeNavHost(
@@ -36,8 +36,8 @@ fun AiMazeNavHost(
         composable(AppDestination.Play.route) {
             PlayMazeScreen(onBack = navController::navigateUp)
         }
-        composable(AppDestination.Training.route) {
-            TrainingScreen(onBack = navController::navigateUp)
+        composable(AppDestination.TimeAttack.route) {
+            TimeAttackScreen(onBack = navController::navigateUp)
         }
         composable(AppDestination.Comparison.route) {
             ComparisonScreen(onBack = navController::navigateUp)
