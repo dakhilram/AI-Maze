@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.data.history.AiMazeDatabase
-import com.akhil.aimaze.data.history.BenchmarkHistoryEntity
-import com.akhil.aimaze.data.history.BenchmarkHistoryRepository
+import com.akhil.aimaze.data.history.RaceRecordEntity
+import com.akhil.aimaze.data.history.RaceRecordRepository
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.launch
@@ -38,9 +38,9 @@ fun HistoryScreen(
 ) {
     val context = LocalContext.current
     val repository = remember(context) {
-        BenchmarkHistoryRepository(AiMazeDatabase.get(context).benchmarkHistoryDao())
+        RaceRecordRepository(AiMazeDatabase.get(context).raceRecordDao())
     }
-    val history by repository.observeAll().collectAsState(initial = emptyList())
+    val records by repository.observeAll().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
     Surface(
@@ -58,10 +58,14 @@ fun HistoryScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) {
+                OutlinedButton(
+                    onClick = onBack,
+                    shape = RoundedCornerShape(16.dp),
+                ) {
                     Text("‹")
                 }
-                if (history.isNotEmpty()) {
+
+                if (records.isNotEmpty()) {
                     OutlinedButton(
                         onClick = { scope.launch { repository.clearAll() } },
                         shape = RoundedCornerShape(16.dp),
@@ -77,11 +81,11 @@ fun HistoryScreen(
                 fontWeight = FontWeight.Black,
             )
             Text(
-                "Your saved race results live only on this device.",
+                "Your Beat the Bot races are saved locally on this device.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            if (history.isEmpty()) {
+            if (records.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
@@ -94,20 +98,32 @@ fun HistoryScreen(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Text(
-                            "NO RECORDS YET",
+                            "NO RACES YET",
                             color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Black,
                         )
                         Text(
-                            "Run Race Mode to create your first scoreboard entry.",
+                            "Play Beat the Bot to create your first race record.",
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
                 }
             } else {
-                history.forEachIndexed { index, item ->
-                    RecordCard(
+                val wins = records.count { it.winner == "PLAYER" }
+                val losses = records.size - wins
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    SummaryCard("WINS", wins.toString(), Modifier.weight(1f))
+                    SummaryCard("LOSSES", losses.toString(), Modifier.weight(1f))
+                    SummaryCard("RACES", records.size.toString(), Modifier.weight(1f))
+                }
+
+                records.forEachIndexed { index, item ->
+                    RaceRecordCard(
                         rank = index + 1,
                         item = item,
                     )
@@ -118,10 +134,38 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun RecordCard(
-    rank: Int,
-    item: BenchmarkHistoryEntity,
+private fun SummaryCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
 ) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+            )
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RaceRecordCard(
+    rank: Int,
+    item: RaceRecordEntity,
+) {
+    val playerWon = item.winner == "PLAYER"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -140,27 +184,35 @@ private fun RecordCard(
                     fontWeight = FontWeight.Black,
                 )
                 Text(
-                    "LEVEL ${item.mazeSeed}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
+                    if (playerWon) "WIN" else "LOSS",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (playerWon) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    fontWeight = FontWeight.Black,
                 )
             }
+
+            Text(
+                "Level #${item.mazeSeed}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+            )
+
+            Text(
+                "You: ${item.playerMoves} moves   •   Bot: ${item.botSteps} steps",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
             Text(
                 DateFormat.getDateTimeInstance(
                     DateFormat.MEDIUM,
                     DateFormat.SHORT,
                 ).format(Date(item.createdAt)),
-                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text("A*  •  path ${item.aStarPathLength}  •  explored ${item.aStarNodesExplored}")
-            Text("Dijkstra  •  path ${item.dijkstraPathLength}  •  explored ${item.dijkstraNodesExplored}")
-            Text(
-                "Q-Learning  •  ${(item.qLearningSuccessRate * 100).toInt()}% success  •  path ${item.qLearningPathLength ?: "—"}",
-            )
-            Text(
-                "Random  •  ${(item.randomSuccessRate * 100).toInt()}% success  •  best ${item.randomBestPathLength ?: "—"}",
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }
