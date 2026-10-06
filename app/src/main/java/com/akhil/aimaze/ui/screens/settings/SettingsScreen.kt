@@ -18,11 +18,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GameBackButton
 import com.akhil.aimaze.ui.game.GamePreferences
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 
@@ -47,24 +49,22 @@ fun SettingsScreen(
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            OutlinedButton(
+            GameBackButton(
                 onClick = {
                     feedback.button()
                     onBack()
                 },
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Text("‹")
-            }
+            )
 
             Text(
                 "Settings",
+                color = Color.White,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
             )
             Text(
                 "Tune the game feedback to your device.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.62f),
             )
 
             SettingCard(
@@ -117,7 +117,7 @@ private fun SettingCard(
                 Text(
                     subtitle,
                     modifier = Modifier.padding(top = 4.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White.copy(alpha = 0.62f),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
