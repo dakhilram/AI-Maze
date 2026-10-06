@@ -4,15 +4,43 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -27,10 +55,14 @@ import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GameBackButton
+import com.akhil.aimaze.ui.game.GamePreferences
+import com.akhil.aimaze.ui.game.GameStatTile
 import com.akhil.aimaze.ui.game.rememberGameFeedback
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.ceil
 
 @Composable
 fun PlayMazeScreen(
@@ -38,16 +70,18 @@ fun PlayMazeScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val preferences = remember(context) { GamePreferences(context) }
     val soloRepository = remember(context) {
         SoloRunRecordRepository(AiMazeDatabase.get(context).soloRunRecordDao())
     }
 
-    var mazeSize by remember { mutableIntStateOf(8) }
-    var levelSeed by remember { mutableLongStateOf(42L) }
-    val maze = remember(mazeSize, levelSeed) {
-        DepthFirstMazeGenerator.generate(mazeSize, mazeSize, seed = levelSeed)
+    var level by remember { mutableStateOf(preferences.campaignLevel) }
+    val mazeSize = campaignSize(level)
+    val seed = campaignSeed(level)
+    val maze = remember(level) {
+        DepthFirstMazeGenerator.generate(mazeSize, mazeSize, seed = seed)
     }
-    val par = remember(maze) { AStarPathfinder.solve(maze).pathLength }
+    val targetMoves = remember(maze) { AStarPathfinder.solve(maze).pathLength }
     var playState by remember(maze) { mutableStateOf(MazePlayState.initial(maze)) }
     var elapsedMs by remember(maze) { mutableLongStateOf(0L) }
     var running by remember(maze) { mutableStateOf(false) }
@@ -55,6 +89,17 @@ fun PlayMazeScreen(
     val feedback = rememberGameFeedback()
     val shake = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
+
+    val pulse = rememberInfiniteTransition(label = "campaignPulse")
+    val playGlow by pulse.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.02f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "campaignPulseScale",
+    )
 
     LaunchedEffect(running, playState.completed) {
         while (running && !playState.completed) {
@@ -68,46 +113,91 @@ fun PlayMazeScreen(
             running = false
             feedback.win()
             if (!saved) {
+                val stars = starsFor(playState.moveCount, targetMoves)
                 soloRepository.save(
                     mode = "MAZE_RUN",
                     rows = maze.rows,
                     columns = maze.columns,
-                    mazeSeed = levelSeed,
+                    mazeSeed = seed,
                     moves = playState.moveCount,
                     elapsedMs = elapsedMs,
-                    stars = starsFor(playState.moveCount, par),
+                    stars = stars,
                 )
+                preferences.advanceCampaignFrom(level)
                 saved = true
             }
         }
     }
 
-    GameBackdrop(style = GameBackdropStyle.Gameplay, modifier = modifier) {
+    GameBackdrop(
+        style = GameBackdropStyle.Gameplay,
+        modifier = modifier,
+    ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 14.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) { Text("‹") }
-                Column {
-                    Text("Maze Run", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-                    Text("Swipe to the exit. Fewer moves earns more stars.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                GameBackButton(
+                    onClick = {
+                        feedback.button()
+                        onBack()
+                    },
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Maze Run",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Text(
+                        text = "Level $level of ${GamePreferences.CAMPAIGN_LEVELS} • ${campaignTier(level)}",
+                        color = Color.White.copy(alpha = 0.62f),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
 
-            DifficultyPicker(
-                selectedSize = mazeSize,
-                onSizeSelected = {
-                    mazeSize = it
-                    elapsedMs = 0
-                    running = false
-                },
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "CAMPAIGN PROGRESS",
+                        color = Color.White.copy(alpha = 0.52f),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Text(
+                        text = "$level / ${GamePreferences.CAMPAIGN_LEVELS}",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Black,
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { level.toFloat() / GamePreferences.CAMPAIGN_LEVELS },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color.White.copy(alpha = 0.08f),
+                )
+            }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatTile("TIME", formatTime(elapsedMs), Modifier.weight(1f))
-                StatTile("MOVES", playState.moveCount.toString(), Modifier.weight(1f))
-                StatTile("PAR", par.toString(), Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                GameStatTile("TIME", formatTime(elapsedMs), Modifier.weight(1f))
+                GameStatTile("MOVES", playState.moveCount.toString(), Modifier.weight(1f))
+                GameStatTile("TARGET", targetMoves.toString(), Modifier.weight(1f))
             }
 
             Card(
@@ -115,9 +205,15 @@ fun PlayMazeScreen(
                     .fillMaxWidth()
                     .graphicsLayer { translationX = shake.value },
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color(0xE8212935),
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = 0.12f),
+                ),
             ) {
-                Box(Modifier.padding(12.dp)) {
+                Box(modifier = Modifier.padding(12.dp)) {
                     SwipeableMazeBoard(
                         playState = playState,
                         onMove = { direction ->
@@ -145,12 +241,16 @@ fun PlayMazeScreen(
                 visible = playState.completed,
                 enter = fadeIn() + scaleIn(),
             ) {
-                val stars = starsFor(playState.moveCount, par)
+                val stars = starsFor(playState.moveCount, targetMoves)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+                    ),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
                     ),
                 ) {
                     Column(
@@ -158,81 +258,98 @@ fun PlayMazeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Text("MAZE CLEARED", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                        Text(
+                            "LEVEL CLEARED",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Black,
+                        )
                         Text(
                             "★".repeat(stars) + "☆".repeat(3 - stars),
                             style = MaterialTheme.typography.displaySmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            "${playState.moveCount} moves • ${formatTime(elapsedMs)}",
+                            "${playState.moveCount} moves • target $targetMoves • ${formatTime(elapsedMs)}",
+                            color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
+                        if (level == GamePreferences.CAMPAIGN_LEVELS) {
+                            Text(
+                                "You beat all 500 levels. More coming soon.",
+                                color = Color.White.copy(alpha = 0.72f),
+                            )
+                        }
                     }
                 }
             }
 
             if (!playState.completed) {
                 Text(
-                    "Swipe up, down, left, or right directly on the maze.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "Swipe directly on the maze. Match the target route for 3 stars.",
+                    color = Color.White.copy(alpha = 0.68f),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 OutlinedButton(
                     onClick = {
+                        feedback.button()
                         playState = MazePlayState.initial(maze)
-                        elapsedMs = 0
+                        elapsedMs = 0L
                         running = false
+                        saved = false
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.26f),
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White,
+                    ),
                 ) {
-                    Text("RESTART", fontWeight = FontWeight.Bold)
+                    Text("RESTART", fontWeight = FontWeight.Black)
                 }
 
                 Button(
                     onClick = {
-                        levelSeed += 1L
-                        elapsedMs = 0
-                        running = false
+                        feedback.button()
+                        if (playState.completed && level < GamePreferences.CAMPAIGN_LEVELS) {
+                            level += 1
+                        } else if (!playState.completed) {
+                            playState = MazePlayState.initial(maze)
+                            elapsedMs = 0L
+                            running = false
+                            saved = false
+                        }
                     },
-                    modifier = Modifier.weight(1f),
+                    enabled = level < GamePreferences.CAMPAIGN_LEVELS || !playState.completed,
+                    modifier = Modifier
+                        .weight(1f)
+                        .graphicsLayer {
+                            if (playState.completed) {
+                                scaleX = playGlow
+                                scaleY = playGlow
+                            }
+                        },
                     shape = RoundedCornerShape(18.dp),
                 ) {
                     Text(
-                        if (playState.completed) "NEXT MAZE" else "NEW MAZE",
+                        text = when {
+                            playState.completed && level < GamePreferences.CAMPAIGN_LEVELS -> "NEXT LEVEL"
+                            playState.completed -> "500 CLEARED"
+                            else -> "TRY AGAIN"
+                        },
                         fontWeight = FontWeight.Black,
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DifficultyPicker(selectedSize: Int, onSizeSelected: (Int) -> Unit) {
-    val options = listOf(8 to "EASY", 12 to "NORMAL", 16 to "HARD", 20 to "EXPERT")
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEach { (size, label) ->
-            FilterChip(
-                selected = selectedSize == size,
-                onClick = { onSizeSelected(size) },
-                label = { Text(label, fontWeight = FontWeight.Bold) },
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier, shape = RoundedCornerShape(16.dp)) {
-        Column(Modifier.padding(12.dp)) {
-            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -247,38 +364,60 @@ private fun SwipeableMazeBoard(
     MazeBoard(
         maze = playState.maze,
         player = playState.player,
-        modifier = Modifier.fillMaxWidth().aspectRatio(1f).pointerInput(playState.maze, playState.completed) {
-            detectDragGestures(
-                onDragStart = { dragOffset = Offset.Zero },
-                onDrag = { change, dragAmount ->
-                    if (!playState.completed) {
-                        change.consume()
-                        dragOffset += dragAmount
-                    }
-                },
-                onDragEnd = {
-                    if (!playState.completed && dragOffset.getDistance() >= 36f) {
-                        val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
-                        val direction = when {
-                            horizontal && dragOffset.x > 0f -> Direction.EAST
-                            horizontal -> Direction.WEST
-                            dragOffset.y > 0f -> Direction.SOUTH
-                            else -> Direction.NORTH
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .pointerInput(playState.maze, playState.completed) {
+                detectDragGestures(
+                    onDragStart = { dragOffset = Offset.Zero },
+                    onDrag = { change, dragAmount ->
+                        if (!playState.completed) {
+                            change.consume()
+                            dragOffset += dragAmount
                         }
-                        onMove(direction)
-                    }
-                    dragOffset = Offset.Zero
-                },
-                onDragCancel = { dragOffset = Offset.Zero },
-            )
-        },
+                    },
+                    onDragEnd = {
+                        if (!playState.completed && dragOffset.getDistance() >= 36f) {
+                            val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
+                            val direction = when {
+                                horizontal && dragOffset.x > 0f -> Direction.EAST
+                                horizontal -> Direction.WEST
+                                dragOffset.y > 0f -> Direction.SOUTH
+                                else -> Direction.NORTH
+                            }
+                            onMove(direction)
+                        }
+                        dragOffset = Offset.Zero
+                    },
+                    onDragCancel = { dragOffset = Offset.Zero },
+                )
+            },
     )
 }
 
-private fun starsFor(moves: Int, par: Int): Int = when {
-    moves <= par -> 3
-    moves <= (par * 1.25f).toInt().coerceAtLeast(par + 1) -> 2
-    else -> 1
+private fun campaignSize(level: Int): Int = when (level) {
+    in 1..125 -> 8
+    in 126..250 -> 12
+    in 251..375 -> 16
+    else -> 20
+}
+
+private fun campaignTier(level: Int): String = when (level) {
+    in 1..125 -> "EASY"
+    in 126..250 -> "MEDIUM"
+    in 251..375 -> "HARD"
+    else -> "EXPERT"
+}
+
+private fun campaignSeed(level: Int): Long = 20_000L + level * 7919L
+
+private fun starsFor(moves: Int, target: Int): Int {
+    val twoStarLimit = target + ceil(target * 0.18).toInt().coerceAtLeast(3)
+    return when {
+        moves <= target -> 3
+        moves <= twoStarLimit -> 2
+        else -> 1
+    }
 }
 
 private fun formatTime(ms: Long): String {
