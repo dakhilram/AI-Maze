@@ -57,6 +57,10 @@ fun AboutScreen(
                 body = "Classic endless play. Your timer starts on the first successful move. Finish near par to earn more stars, then jump straight into the next level.",
             )
             GuideCard(
+                title = "DAILY CHALLENGE",
+                body = "Every day gets one fixed 12×12 maze generated from the date. Score it with both route efficiency and completion speed.",
+            )
+            GuideCard(
                 title = "TIME ATTACK",
                 body = "You get a fixed clock based on difficulty. A 3-2-1 countdown starts the round. Escape before time expires.",
             )
