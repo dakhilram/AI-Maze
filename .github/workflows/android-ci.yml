@@ -21,11 +21,19 @@ jobs:
           distribution: temurin
           java-version: "25"
 
+      - name: Refresh Android command-line tools
+        run: |
+          OLD_SDKMANAGER="$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | head -n 1)"
+          test -n "$OLD_SDKMANAGER"
+          yes | "$OLD_SDKMANAGER" --licenses >/dev/null || true
+          "$OLD_SDKMANAGER" "cmdline-tools;latest"
+
       - name: Install Android 37 platform
         run: |
-          SDKMANAGER="$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | head -n 1)"
-          test -n "$SDKMANAGER"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --update || true
+          "$SDKMANAGER" --list | grep "platforms;android-37" || true
           "$SDKMANAGER" "platforms;android-37"
 
       - name: Make Gradle wrapper executable
