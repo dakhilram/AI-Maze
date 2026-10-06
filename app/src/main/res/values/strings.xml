@@ -2,7 +2,7 @@
     <string name="app_name">AI Maze</string>
     <string name="home_eyebrow">AI MAZE</string>
     <string name="home_title">Explore, learn, and compete</string>
-    <string name="home_description">Choose a section to preview the foundation of the AI Maze experience.</string>
+    <string name="home_description">Generate mazes, train Q-Learning, compare pathfinding algorithms, and learn how each approach works — entirely offline.</string>
     <string name="play_title">Play Maze</string>
     <string name="play_description">Create and solve interactive mazes at your own pace.</string>
     <string name="training_title">Train AI</string>
