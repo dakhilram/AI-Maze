@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
@@ -97,8 +98,11 @@ fun DifficultySelector(
             ) {
                 Text(
                     text = label,
-                    modifier = Modifier.padding(vertical = 12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
                     color = if (enabled) Color.White else Color.White.copy(alpha = 0.38f),
+                    textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Black,
                     maxLines = 1,
