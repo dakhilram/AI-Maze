@@ -46,6 +46,7 @@ fun HomeScreen(
     val timeAttack = destinations.firstOrNull { it == AppDestination.TimeAttack }
     val beatBot = destinations.firstOrNull { it == AppDestination.Comparison }
     val records = destinations.firstOrNull { it == AppDestination.History }
+    val settings = destinations.firstOrNull { it == AppDestination.Settings }
     val howToPlay = destinations.firstOrNull { it == AppDestination.About }
 
     GameBackdrop(
@@ -143,15 +144,29 @@ fun HomeScreen(
             }
 
             item {
+                records?.let { destination ->
+                    UtilityCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        title = "RECORDS",
+                        subtitle = "Wins • stars • times",
+                        onClick = {
+                            feedback.button()
+                            onDestinationSelected(destination)
+                        },
+                    )
+                }
+            }
+
+            item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    records?.let { destination ->
+                    settings?.let { destination ->
                         UtilityCard(
                             modifier = Modifier.weight(1f),
-                            title = "RECORDS",
-                            subtitle = "Wins • stars • times",
+                            title = "SETTINGS",
+                            subtitle = "Sound • haptics",
                             onClick = {
                                 feedback.button()
                                 onDestinationSelected(destination)
@@ -162,7 +177,7 @@ fun HomeScreen(
                         UtilityCard(
                             modifier = Modifier.weight(1f),
                             title = "HOW TO PLAY",
-                            subtitle = "Modes • scoring • controls",
+                            subtitle = "Modes • scoring",
                             onClick = {
                                 feedback.button()
                                 onDestinationSelected(destination)
