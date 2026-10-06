@@ -149,6 +149,7 @@ fun ComparisonScreen(
 
             DifficultyPicker(
                 selectedSize = mazeSize,
+                enabled = !raceStarted && countdown == 0,
                 onSizeSelected = {
                     mazeSize = it
                     raceStarted = false
@@ -282,6 +283,7 @@ fun ComparisonScreen(
 @Composable
 private fun DifficultyPicker(
     selectedSize: Int,
+    enabled: Boolean,
     onSizeSelected: (Int) -> Unit,
 ) {
     val options = listOf(
@@ -299,6 +301,7 @@ private fun DifficultyPicker(
             androidx.compose.material3.FilterChip(
                 selected = selectedSize == size,
                 onClick = { onSizeSelected(size) },
+                enabled = enabled,
                 label = { Text(label, fontWeight = FontWeight.Bold) },
                 modifier = Modifier.weight(1f),
             )
