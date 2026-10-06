@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">AI Maze</string>
+    <string name="home_eyebrow">AI MAZE</string>
+    <string name="home_title">Explore, learn, and compete</string>
+    <string name="home_description">Choose a section to preview the foundation of the AI Maze experience.</string>
+    <string name="play_title">Play Maze</string>
+    <string name="play_description">Create and solve interactive mazes at your own pace.</string>
+    <string name="training_title">Train AI</string>
+    <string name="training_description">Watch an AI agent learn to navigate a maze through training.</string>
+    <string name="comparison_title">AI vs Algorithms</string>
+    <string name="comparison_description">Compare a trained AI agent with classic pathfinding approaches.</string>
+    <string name="history_title">Learning / Benchmark History</string>
+    <string name="history_description">Review future learning progress and benchmark results in one place.</string>
+    <string name="about_title">How It Works</string>
+    <string name="about_description">Explore clear explanations of mazes, learning, and pathfinding concepts.</string>
+    <string name="back">Back</string>
+    <string name="future_feature">FUTURE FEATURE</string>
 </resources>
