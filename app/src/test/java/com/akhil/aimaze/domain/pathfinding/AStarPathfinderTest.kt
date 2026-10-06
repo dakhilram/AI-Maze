@@ -20,6 +20,24 @@ class AStarPathfinderTest {
     }
 
     @Test
+    fun canSolveFromCurrentPlayerPosition() {
+        val maze = DepthFirstMazeGenerator.generate(8, 8, seed = 14L)
+        val full = AStarPathfinder.solve(maze)
+        val midway = full.path[full.path.size / 2]
+
+        val remaining = AStarPathfinder.solve(
+            maze = maze,
+            start = midway,
+            goal = maze.goal,
+        )
+
+        assertTrue(remaining.found)
+        assertEquals(midway, remaining.path.first())
+        assertEquals(maze.goal, remaining.path.last())
+        assertValidPath(maze, remaining.path)
+    }
+
+    @Test
     fun sameMazeProducesSameOptimalPath() {
         val maze = DepthFirstMazeGenerator.generate(8, 8, seed = 5L)
         val first = AStarPathfinder.solve(maze)
