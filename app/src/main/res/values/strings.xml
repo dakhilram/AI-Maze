@@ -14,4 +14,5 @@
     <string name="about_title">How to Play</string>
     <string name="about_description">Learn the controls, scoring, and game modes.</string>
     <string name="back">Back</string>
+    <string name="future_feature">COMING SOON</string>
 </resources>
