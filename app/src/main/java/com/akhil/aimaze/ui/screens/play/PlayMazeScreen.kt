@@ -1,36 +1,19 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.akhil.aimaze.ui.screens.play
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,6 +22,9 @@ import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.pathfinding.AStarPathfinder
 import com.akhil.aimaze.domain.play.MazePlayState
 import com.akhil.aimaze.ui.components.MazeBoard
+import com.akhil.aimaze.ui.game.rememberGameFeedback
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
@@ -48,111 +34,135 @@ fun PlayMazeScreen(
 ) {
     var mazeSize by remember { mutableIntStateOf(8) }
     var levelSeed by remember { mutableLongStateOf(42L) }
-    var hintsUsed by remember(mazeSize, levelSeed) { mutableIntStateOf(0) }
-    var hintPath by remember(mazeSize, levelSeed) { mutableStateOf(emptyList<com.akhil.aimaze.domain.maze.Position>()) }
-    var playState by remember(mazeSize, levelSeed) {
-        mutableStateOf(
-            MazePlayState.initial(
-                DepthFirstMazeGenerator.generate(
-                    rows = mazeSize,
-                    columns = mazeSize,
-                    seed = levelSeed,
-                ),
-            ),
-        )
+    val maze = remember(mazeSize, levelSeed) {
+        DepthFirstMazeGenerator.generate(mazeSize, mazeSize, seed = levelSeed)
+    }
+    val par = remember(maze) { AStarPathfinder.solve(maze).pathLength }
+    var playState by remember(maze) { mutableStateOf(MazePlayState.initial(maze)) }
+    var elapsedMs by remember(maze) { mutableLongStateOf(0L) }
+    var running by remember(maze) { mutableStateOf(false) }
+    val feedback = rememberGameFeedback()
+    val shake = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(running, playState.completed) {
+        while (running && !playState.completed) {
+            delay(100)
+            elapsedMs += 100
+        }
     }
 
-    Surface(
-        modifier = modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
+    LaunchedEffect(playState.completed) {
+        if (playState.completed) {
+            running = false
+            feedback.win()
+        }
+    }
+
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            GameTopBar(
-                title = "Maze Run",
-                onBack = onBack,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) { Text("‹") }
+                Column {
+                    Text("Maze Run", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                    Text("Swipe to the exit. Fewer moves earns more stars.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
 
             DifficultyPicker(
                 selectedSize = mazeSize,
-                onSizeSelected = { mazeSize = it },
+                onSizeSelected = {
+                    mazeSize = it
+                    elapsedMs = 0
+                    running = false
+                },
             )
 
-            RunHud(
-                moves = playState.moveCount,
-                levelSeed = levelSeed,
-                completed = playState.completed,
-                hintsUsed = hintsUsed,
-            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatTile("TIME", formatTime(elapsedMs), Modifier.weight(1f))
+                StatTile("MOVES", playState.moveCount.toString(), Modifier.weight(1f))
+                StatTile("PAR", par.toString(), Modifier.weight(1f))
+            }
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer { translationX = shake.value },
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                ),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             ) {
-                Box(modifier = Modifier.padding(12.dp)) {
+                Box(Modifier.padding(12.dp)) {
                     SwipeableMazeBoard(
                         playState = playState,
-                        hintPath = hintPath,
                         onMove = { direction ->
-                            if (!playState.completed) {
-                                playState = playState.move(direction)
-                                hintPath = emptyList()
+                            val before = playState
+                            val after = before.move(direction)
+                            if (after === before) {
+                                feedback.blocked()
+                                scope.launch {
+                                    shake.snapTo(0f)
+                                    shake.animateTo(-10f, tween(45))
+                                    shake.animateTo(10f, tween(70))
+                                    shake.animateTo(0f, tween(55))
+                                }
+                            } else {
+                                if (!running) running = true
+                                feedback.move()
+                                playState = after
                             }
                         },
                     )
                 }
             }
 
-            if (playState.completed) {
+            AnimatedVisibility(
+                visible = playState.completed,
+                enter = fadeIn() + scaleIn(),
+            ) {
+                val stars = starsFor(playState.moveCount, par)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                     ),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
+                        Text("MAZE CLEARED", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
                         Text(
-                            text = "MAZE CLEARED",
+                            "★".repeat(stars) + "☆".repeat(3 - stars),
+                            style = MaterialTheme.typography.displaySmall,
                             color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Black,
                         )
                         Text(
-                            text = "${playState.moveCount} moves",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Black,
+                            "${playState.moveCount} moves • ${formatTime(elapsedMs)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
-            } else {
+            }
+
+            if (!playState.completed) {
                 Text(
-                    text = "Swipe anywhere on the maze to move one cell.",
-                    modifier = Modifier.fillMaxWidth(),
+                    "Swipe up, down, left, or right directly on the maze.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
                     onClick = {
-                        playState = playState.reset()
-                        hintPath = emptyList()
-                        hintsUsed = 0
+                        playState = MazePlayState.initial(maze)
+                        elapsedMs = 0
+                        running = false
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
@@ -160,34 +170,17 @@ fun PlayMazeScreen(
                     Text("RESTART", fontWeight = FontWeight.Bold)
                 }
 
-                OutlinedButton(
-                    onClick = {
-                        val route = AStarPathfinder.solve(
-                            maze = playState.maze,
-                            start = playState.player,
-                            goal = playState.maze.goal,
-                        ).path
-                        hintPath = route.take(2)
-                        if (hintPath.size > 1) hintsUsed += 1
-                    },
-                    enabled = !playState.completed,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(18.dp),
-                ) {
-                    Text("HINT", fontWeight = FontWeight.Bold)
-                }
-
                 Button(
                     onClick = {
                         levelSeed += 1L
-                        hintPath = emptyList()
-                        hintsUsed = 0
+                        elapsedMs = 0
+                        running = false
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(18.dp),
                 ) {
                     Text(
-                        text = if (playState.completed) "NEXT" else "NEW",
+                        if (playState.completed) "NEXT MAZE" else "NEW MAZE",
                         fontWeight = FontWeight.Black,
                     )
                 }
@@ -197,45 +190,9 @@ fun PlayMazeScreen(
 }
 
 @Composable
-private fun GameTopBar(
-    title: String,
-    onBack: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(
-            onClick = onBack,
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text("‹")
-        }
-        Text(
-            text = title,
-            modifier = Modifier.padding(start = 12.dp),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Black,
-        )
-    }
-}
-
-@Composable
-private fun DifficultyPicker(
-    selectedSize: Int,
-    onSizeSelected: (Int) -> Unit,
-) {
-    val options = listOf(
-        8 to "EASY",
-        12 to "NORMAL",
-        16 to "HARD",
-        20 to "EXPERT",
-    )
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+private fun DifficultyPicker(selectedSize: Int, onSizeSelected: (Int) -> Unit) {
+    val options = listOf(8 to "EASY", 12 to "NORMAL", 16 to "HARD", 20 to "EXPERT")
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { (size, label) ->
             FilterChip(
                 selected = selectedSize == size,
@@ -248,61 +205,11 @@ private fun DifficultyPicker(
 }
 
 @Composable
-private fun RunHud(
-    moves: Int,
-    levelSeed: Long,
-    completed: Boolean,
-    hintsUsed: Int,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        HudTile(
-            label = "MOVES",
-            value = moves.toString(),
-            modifier = Modifier.weight(1f),
-        )
-        HudTile(
-            label = "LEVEL",
-            value = "#$levelSeed",
-            modifier = Modifier.weight(1f),
-        )
-        HudTile(
-            label = "HINTS",
-            value = hintsUsed.toString(),
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun HudTile(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-        ) {
-            Text(
-                text = label,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
-            )
+private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(12.dp)) {
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -310,45 +217,51 @@ private fun HudTile(
 @Composable
 private fun SwipeableMazeBoard(
     playState: MazePlayState,
-    hintPath: List<com.akhil.aimaze.domain.maze.Position>,
     onMove: (Direction) -> Unit,
 ) {
     var dragOffset by remember(playState.maze) { mutableStateOf(Offset.Zero) }
-    val swipeThreshold = 36f
 
     MazeBoard(
         maze = playState.maze,
         player = playState.player,
-        path = hintPath,
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .pointerInput(playState.maze, playState.completed) {
-                detectDragGestures(
-                    onDragStart = {
-                        dragOffset = Offset.Zero
-                    },
-                    onDrag = { change, dragAmount ->
+        modifier = Modifier.fillMaxWidth().aspectRatio(1f).pointerInput(playState.maze, playState.completed) {
+            detectDragGestures(
+                onDragStart = { dragOffset = Offset.Zero },
+                onDrag = { change, dragAmount ->
+                    if (!playState.completed) {
                         change.consume()
                         dragOffset += dragAmount
-                    },
-                    onDragEnd = {
+                    }
+                },
+                onDragEnd = {
+                    if (!playState.completed && dragOffset.getDistance() >= 36f) {
                         val horizontal = abs(dragOffset.x) > abs(dragOffset.y)
                         val direction = when {
-                            dragOffset.getDistance() < swipeThreshold -> null
                             horizontal && dragOffset.x > 0f -> Direction.EAST
-                            horizontal && dragOffset.x < 0f -> Direction.WEST
-                            !horizontal && dragOffset.y > 0f -> Direction.SOUTH
-                            !horizontal && dragOffset.y < 0f -> Direction.NORTH
-                            else -> null
+                            horizontal -> Direction.WEST
+                            dragOffset.y > 0f -> Direction.SOUTH
+                            else -> Direction.NORTH
                         }
-                        direction?.let(onMove)
-                        dragOffset = Offset.Zero
-                    },
-                    onDragCancel = {
-                        dragOffset = Offset.Zero
-                    },
-                )
-            },
+                        onMove(direction)
+                    }
+                    dragOffset = Offset.Zero
+                },
+                onDragCancel = { dragOffset = Offset.Zero },
+            )
+        },
     )
+}
+
+private fun starsFor(moves: Int, par: Int): Int = when {
+    moves <= par -> 3
+    moves <= (par * 1.25f).toInt().coerceAtLeast(par + 1) -> 2
+    else -> 1
+}
+
+private fun formatTime(ms: Long): String {
+    val totalSeconds = ms / 1_000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    val tenths = (ms % 1_000) / 100
+    return "%d:%02d.%d".format(minutes, seconds, tenths)
 }
