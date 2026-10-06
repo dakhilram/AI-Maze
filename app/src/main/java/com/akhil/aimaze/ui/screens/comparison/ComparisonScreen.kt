@@ -21,7 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.akhil.aimaze.data.history.AiMazeDatabase
+import com.akhil.aimaze.data.history.BenchmarkHistoryRepository
 import com.akhil.aimaze.domain.benchmark.BenchmarkReport
 import com.akhil.aimaze.domain.benchmark.BenchmarkSuite
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
@@ -34,7 +37,12 @@ fun ComparisonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val maze = remember { DepthFirstMazeGenerator.generate(12, 12, seed = 42L) }
+    val mazeSeed = 42L
+    val maze = remember { DepthFirstMazeGenerator.generate(12, 12, seed = mazeSeed) }
+    val context = LocalContext.current
+    val historyRepository = remember(context) {
+        BenchmarkHistoryRepository(AiMazeDatabase.get(context).benchmarkHistoryDao())
+    }
     val scope = rememberCoroutineScope()
     var report by remember { mutableStateOf<BenchmarkReport?>(null) }
     var running by remember { mutableStateOf(false) }
@@ -59,9 +67,16 @@ fun ComparisonScreen(
                 running = true
                 report = null
                 scope.launch {
-                    report = withContext(Dispatchers.Default) {
+                    val completed = withContext(Dispatchers.Default) {
                         BenchmarkSuite.run(maze = maze, qLearningEpisodes = 600, randomTrials = 50)
                     }
+                    report = completed
+                    historyRepository.save(
+                        report = completed,
+                        rows = maze.rows,
+                        columns = maze.columns,
+                        mazeSeed = mazeSeed,
+                    )
                     running = false
                 }
             },
