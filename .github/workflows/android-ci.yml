@@ -28,13 +28,11 @@ jobs:
           yes | "$OLD_SDKMANAGER" --licenses >/dev/null || true
           "$OLD_SDKMANAGER" "cmdline-tools;latest"
 
-      - name: Install Android 37 platform
+      - name: Install Android 17 SDK
         run: |
           SDKMANAGER="/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager"
           test -x "$SDKMANAGER"
-          "$SDKMANAGER" --update || true
-          "$SDKMANAGER" --list | grep "platforms;android-37" || true
-          "$SDKMANAGER" "platforms;android-37"
+          "$SDKMANAGER" --channel=3 --install "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
