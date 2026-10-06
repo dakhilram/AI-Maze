@@ -28,8 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.akhil.aimaze.data.history.AiMazeDatabase
+import com.akhil.aimaze.data.history.RaceRecordRepository
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.Position
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
@@ -44,6 +47,11 @@ fun ComparisonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val raceRepository = remember(context) {
+        RaceRecordRepository(AiMazeDatabase.get(context).raceRecordDao())
+    }
+
     var mazeSize by remember { mutableIntStateOf(8) }
     var levelSeed by remember { mutableLongStateOf(77L) }
     var raceStarted by remember(mazeSize, levelSeed) { mutableStateOf(false) }
@@ -58,6 +66,18 @@ fun ComparisonScreen(
 
     var playState by remember(maze) {
         mutableStateOf(MazePlayState.initial(maze))
+    }
+
+    LaunchedEffect(winner) {
+        val raceWinner = winner ?: return@LaunchedEffect
+        raceRepository.save(
+            rows = maze.rows,
+            columns = maze.columns,
+            mazeSeed = levelSeed,
+            winner = raceWinner,
+            playerMoves = playState.moveCount,
+            botSteps = botIndex,
+        )
     }
 
     LaunchedEffect(raceStarted, winner, botPath) {
