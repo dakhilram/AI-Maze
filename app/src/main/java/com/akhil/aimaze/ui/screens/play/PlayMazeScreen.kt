@@ -15,8 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.akhil.aimaze.data.history.AiMazeDatabase
+import com.akhil.aimaze.data.history.SoloRunRecordRepository
 import com.akhil.aimaze.domain.maze.Direction
 import com.akhil.aimaze.domain.maze.generation.DepthFirstMazeGenerator
 import com.akhil.aimaze.domain.pathfinding.AStarPathfinder
@@ -32,6 +35,11 @@ fun PlayMazeScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val soloRepository = remember(context) {
+        SoloRunRecordRepository(AiMazeDatabase.get(context).soloRunRecordDao())
+    }
+
     var mazeSize by remember { mutableIntStateOf(8) }
     var levelSeed by remember { mutableLongStateOf(42L) }
     val maze = remember(mazeSize, levelSeed) {
@@ -41,6 +49,7 @@ fun PlayMazeScreen(
     var playState by remember(maze) { mutableStateOf(MazePlayState.initial(maze)) }
     var elapsedMs by remember(maze) { mutableLongStateOf(0L) }
     var running by remember(maze) { mutableStateOf(false) }
+    var saved by remember(maze) { mutableStateOf(false) }
     val feedback = rememberGameFeedback()
     val shake = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
@@ -56,6 +65,18 @@ fun PlayMazeScreen(
         if (playState.completed) {
             running = false
             feedback.win()
+            if (!saved) {
+                soloRepository.save(
+                    mode = "MAZE_RUN",
+                    rows = maze.rows,
+                    columns = maze.columns,
+                    mazeSeed = levelSeed,
+                    moves = playState.moveCount,
+                    elapsedMs = elapsedMs,
+                    stars = starsFor(playState.moveCount, par),
+                )
+                saved = true
+            }
         }
     }
 
