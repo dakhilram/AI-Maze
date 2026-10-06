@@ -116,7 +116,7 @@ com.akhil.aimaze
 
 The domain layer is intentionally independent from Android and Compose where possible so algorithm logic can be tested as ordinary Kotlin.
 
-See [Architecture](docs/ARCHITECTURE.md) and [Privacy & Security](docs/PRIVACY_SECURITY.md).
+See [Architecture](docs/ARCHITECTURE.md), [Privacy & Security](docs/PRIVACY_SECURITY.md), [Release Guide](docs/RELEASE.md), and [Google Play Preparation](docs/PLAY_STORE.md).
 
 ## Technology
 
