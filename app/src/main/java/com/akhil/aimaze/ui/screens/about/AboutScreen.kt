@@ -16,10 +16,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.akhil.aimaze.ui.game.GameBackdrop
 import com.akhil.aimaze.ui.game.GameBackdropStyle
+import com.akhil.aimaze.ui.game.GameBackButton
 
 @Composable
 fun AboutScreen(
@@ -37,19 +39,18 @@ fun AboutScreen(
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            OutlinedButton(onClick = onBack, shape = RoundedCornerShape(16.dp)) {
-                Text("‹")
-            }
+            GameBackButton(onClick = onBack)
 
             Text(
                 "How to Play",
+                color = Color.White,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Black,
             )
             Text(
                 "Swipe directly on the maze. Reach the glowing exit and keep your route clean.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = 0.62f),
             )
 
             GuideCard(
