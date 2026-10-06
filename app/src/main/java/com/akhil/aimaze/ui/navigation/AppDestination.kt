@@ -41,6 +41,6 @@ enum class AppDestination(
     ;
 
     companion object {
-        val homeSections: List<AppDestination> = entries.filterNot { it == Home }
+        val homeSections: List<AppDestination> = listOf(Play, Comparison, Training, History, About)
     }
 }
