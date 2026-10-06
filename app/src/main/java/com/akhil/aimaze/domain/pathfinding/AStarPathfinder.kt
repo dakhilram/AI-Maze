@@ -6,25 +6,38 @@ import java.util.PriorityQueue
 import kotlin.math.abs
 
 object AStarPathfinder {
-    fun solve(maze: Maze): SearchResult {
+    fun solve(maze: Maze): SearchResult = solve(
+        maze = maze,
+        start = maze.start,
+        goal = maze.goal,
+    )
+
+    fun solve(
+        maze: Maze,
+        start: Position,
+        goal: Position,
+    ): SearchResult {
+        require(maze.isInside(start)) { "Start position must be inside the maze." }
+        require(maze.isInside(goal)) { "Goal position must be inside the maze." }
+
         val started = System.nanoTime()
-        if (maze.start == maze.goal) {
-            return SearchResult(listOf(maze.start), 1, System.nanoTime() - started)
+        if (start == goal) {
+            return SearchResult(listOf(start), 1, System.nanoTime() - started)
         }
 
         data class Node(val position: Position, val g: Int, val f: Int)
         val frontier = PriorityQueue<Node>(compareBy<Node> { it.f }.thenBy { it.g })
         val cameFrom = mutableMapOf<Position, Position>()
-        val bestG = mutableMapOf(maze.start to 0)
+        val bestG = mutableMapOf(start to 0)
         val closed = mutableSetOf<Position>()
-        frontier += Node(maze.start, 0, heuristic(maze.start, maze.goal))
+        frontier += Node(start, 0, heuristic(start, goal))
 
         while (frontier.isNotEmpty()) {
             val current = frontier.remove()
             if (!closed.add(current.position)) continue
-            if (current.position == maze.goal) {
+            if (current.position == goal) {
                 return SearchResult(
-                    path = reconstruct(cameFrom, maze.start, maze.goal),
+                    path = reconstruct(cameFrom, start, goal),
                     nodesExplored = closed.size,
                     executionNanos = System.nanoTime() - started,
                 )
@@ -39,7 +52,7 @@ object AStarPathfinder {
                     frontier += Node(
                         position = neighbor,
                         g = tentative,
-                        f = tentative + heuristic(neighbor, maze.goal),
+                        f = tentative + heuristic(neighbor, goal),
                     )
                 }
             }
