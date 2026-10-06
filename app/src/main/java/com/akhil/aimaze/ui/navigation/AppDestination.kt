@@ -8,39 +8,15 @@ enum class AppDestination(
     @field:StringRes val titleRes: Int,
     @field:StringRes val descriptionRes: Int,
 ) {
-    Home(
-        route = "home",
-        titleRes = R.string.app_name,
-        descriptionRes = R.string.home_description,
-    ),
-    Play(
-        route = "play",
-        titleRes = R.string.play_title,
-        descriptionRes = R.string.play_description,
-    ),
-    Training(
-        route = "training",
-        titleRes = R.string.training_title,
-        descriptionRes = R.string.training_description,
-    ),
-    Comparison(
-        route = "comparison",
-        titleRes = R.string.comparison_title,
-        descriptionRes = R.string.comparison_description,
-    ),
-    History(
-        route = "history",
-        titleRes = R.string.history_title,
-        descriptionRes = R.string.history_description,
-    ),
-    About(
-        route = "about",
-        titleRes = R.string.about_title,
-        descriptionRes = R.string.about_description,
-    ),
+    Home("home", R.string.app_name, R.string.home_description),
+    Play("play", R.string.play_title, R.string.play_description),
+    TimeAttack("time_attack", R.string.time_attack_title, R.string.time_attack_description),
+    Comparison("comparison", R.string.comparison_title, R.string.comparison_description),
+    History("history", R.string.history_title, R.string.history_description),
+    About("about", R.string.about_title, R.string.about_description),
     ;
 
     companion object {
-        val homeSections: List<AppDestination> = listOf(Play, Comparison, Training, History, About)
+        val homeSections = listOf(Play, TimeAttack, Comparison, History, About)
     }
 }
